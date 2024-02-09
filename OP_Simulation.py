@@ -57,22 +57,24 @@ Example Optimal Path Simulation for a Continuously Monitored
 Quantum Harmonic Oscillator with Controlled Quadrature Measurement
 '''
 
-nlevels = 6
+nlevels = 8
 rho_i = basis(nlevels,0)
 #rho_f = basis(nlevels,4)
 rho_f = coherent(nlevels, 0.5+1j*0.17)
+#rho_f = coherent(nlevels, 0.5)
 a = destroy(nlevels)
 t_i = 0
 t_f = 3
-ts = np.linspace(t_i,t_f,300)
+ts = np.linspace(t_i, t_f, 300)
+theta_t = np.zeros(len(ts))
 dt = ts[1]-ts[0]
-tau = 10
-nsteps = 1
+tau = 50
+nsteps = 100
 X = (a+a.dag())/np.sqrt(2)
 P = (a-a.dag())/(np.sqrt(2)*1j)
 H = (X*X+P*P)/2.0
-Ljump = X
-Mjump = P
+#Ljump = X
+#Mjump = P
 rho_i = rho_i*rho_i.dag()
 rho_f = rho_f*rho_f.dag()
 
@@ -80,9 +82,9 @@ rho_f = rho_f*rho_f.dag()
 #pvec = np.linspace(-5,5,200)
 #W_i = wigner(rho_i,xvec,pvec)
 
-q3, q4, q5, alr, ali, A, B, q1t, q2t = OP_PRXQ_Params(Ljump, Mjump, rho_i, rho_f, ts, tau)
+q3, q4, q5, alr, ali, A, B, q1t, q2t = OP_PRXQ_Params(X, P, rho_i, rho_f, ts, tau)
 
-rho_f_simul, X_simul, P_simul, varX_simul, covXP_simul, varP_simul = OPsoln_SHO(Ljump, Mjump, H, rho_i, alr, ali, A, B, ts,  tau, 1)
+rho_f_simul, X_simul, P_simul, varX_simul, covXP_simul, varP_simul = OPsoln_SHO(X, P, H, rho_i, alr, ali, A, B, ts,  tau, 1)
 
 
 fig, axs = plt.subplots(5,1,figsize=(6,12),sharex='all')
@@ -102,18 +104,18 @@ axs[0].legend(loc=4,fontsize=12)
 
 axs[2].axhline(q3/2.0, linewidth =4, color = 'green', label = 'PRXQ')
 axs[2].plot(ts, varX_simul, linewidth =4, linestyle = 'dashed', color = 'blue', label = 'General')
-axs[2].plot(t_i, expect((Ljump-q1t[0])*(Ljump-q1t[0]), rho_i), "o", color = 'b')
-axs[2].plot(t_f, expect((Ljump-q1t[-1])*(Ljump-q1t[-1]), rho_f), "X", color = 'r')
+axs[2].plot(t_i, expect((X-q1t[0])*(X-q1t[0]), rho_i), "o", color = 'b')
+axs[2].plot(t_f, expect((X-q1t[-1])*(X-q1t[-1]), rho_f), "X", color = 'r')
 
 axs[3].axhline(q4/2.0, linewidth =4, color = 'green', label = 'PRXQ')
 axs[3].plot(ts, covXP_simul, linewidth =4, linestyle = 'dashed', color = 'blue', label = 'General')
-axs[3].plot(t_i, expect((Ljump-q1t[0])*(Mjump-q2t[0])/2.0+(Mjump-q2t[0])*(Ljump-q1t[0])/2.0, rho_i), "o", color = 'b')
-axs[3].plot(t_f, expect((Ljump-q1t[-1])*(Mjump-q2t[-1])/2.0+(Mjump-q2t[-1])*(Ljump-q1t[-1])/2.0, rho_f), "X", color = 'r')
+axs[3].plot(t_i, expect((X-q1t[0])*(P-q2t[0])/2.0+(P-q2t[0])*(X-q1t[0])/2.0, rho_i), "o", color = 'b')
+axs[3].plot(t_f, expect((X-q1t[-1])*(P-q2t[-1])/2.0+(P-q2t[-1])*(X-q1t[-1])/2.0, rho_f), "X", color = 'r')
 
 axs[4].axhline(q5/2.0, linewidth =4, color = 'green', label = 'PRXQ')
 axs[4].plot(ts, varP_simul, linewidth =4, linestyle = 'dashed', color = 'blue', label = 'General')
-axs[4].plot(t_i, expect((Mjump-q2t[0])*(Mjump-q2t[0]), rho_i), "o", color = 'b')
-axs[4].plot(t_f, expect((Mjump-q2t[-1])*(Mjump-q2t[-1]), rho_f), "X", color = 'r')
+axs[4].plot(t_i, expect((P-q2t[0])*(P-q2t[0]), rho_i), "o", color = 'b')
+axs[4].plot(t_f, expect((P-q2t[-1])*(P-q2t[-1]), rho_f), "X", color = 'r')
 
 
 axs[2].set_ylabel('var('+r'$X)$', fontsize = 15)
