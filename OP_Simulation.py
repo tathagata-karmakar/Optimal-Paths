@@ -6,7 +6,7 @@ Created on Fri Feb  9 10:20:05 2024
 @author: t_karmakar
 """
 
-import os
+import os,sys
 import time
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -14,11 +14,12 @@ import numpy as np
 import math
 import scipy
 from scipy.integrate import simps as intg
-from google.colab import files
-from google.colab import drive
+#from google.colab import files
+#from google.colab import drive
 from matplotlib import rc
 from pylab import rcParams
 from matplotlib import colors
+#load_py_module_on_import_failure=True
 from qutip import *
 from OP_Functions import *
 os.environ["PATH"] += os.pathsep + '/Library/TeX/texbin'
@@ -122,4 +123,4 @@ axs[2].tick_params(labelsize=15)
 axs[3].tick_params(labelsize=15)
 axs[4].tick_params(labelsize=15)
 plt.subplots_adjust(wspace=0.1, hspace=0.1)
-plt.savefig('/Users/t_karmakar/Library/CloudStorage/Box-Box/Research/superoscillations/plots/tmp/fig2.pdf',bbox_inches='tight')
+plt.savefig('/Users/t_karmakar/Library/CloudStorage/Box-Box/Research/Optimal_Path/Plots/tmpfig.pdf',bbox_inches='tight')

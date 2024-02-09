@@ -6,7 +6,7 @@ Created on Fri Feb  9 10:16:27 2024
 @author: t_karmakar
 """
 
-import os
+import os,sys
 import time
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -14,8 +14,8 @@ import numpy as np
 import math
 import scipy
 from scipy.integrate import simps as intg
-from google.colab import files
-from google.colab import drive
+#from google.colab import files
+#from google.colab import drive
 from matplotlib import rc
 from pylab import rcParams
 from matplotlib import colors
