@@ -207,7 +207,7 @@ def rho_update(i, Input_Initials):
   Lind_update = (jnp.matmul(jnp.matmul(Ljump,rho),Ljump)-jnp.matmul(Ljump2, rho)/2.0-jnp.matmul(rho, Ljump2)/2.0)/(4*tau)
   Back_update = u*(jnp.matmul(delL, rho)+ jnp.matmul(rho, delL))*(1.0/(2*tau))
   rho1 = rho + (H_update+Lind_update+Back_update)*dt
-  #rho = rho1#/rho1.tr()
+  #rho1 = rho1/jnp.trace(rho1).real
   #delI_tR_Mat = jnp.array([0.0,0.0,-sn2ph/(8*tau), cs2ph/(8*tau)])
   #delI_tI_Mat = jnp.array([0.0,0.0,cs2ph/(8*tau), sn2ph/(8*tau)])
   delI_t_Mat = jnp.array([0.0  ,0. , 1j*jnp.exp(1j*2*phi)/(8.0*tau), jnp.exp(1j*2*phi)/(8.0*tau) ])
@@ -287,54 +287,3 @@ def PlotOP(Initials, X, P, H, rho_i, rho_f, ts, theta_t, tau, figname):
     plt.subplots_adjust(wspace=0.1, hspace=0.1)
     plt.savefig('/Users/t_karmakar/Library/CloudStorage/Box-Box/Research/Optimal_Path/Plots/'+figname+'.pdf',bbox_inches='tight')
 
-#@jit
-def rho_update1(Initials, H, Ljump, Mjump, rho, I_t, theta, t, tau, dt, Id):
-  #Initials, X, P, H, X2, P2, XP, PX, rho, I_tR, I_tI, theta_t, ts, tau, dt, j = Input_Initials
-  #I_t = I_tR + 1j*I_tI
-  #t = ts[j]
-  #theta = theta_t[j]
-  phi = theta+t
-  #print (phi)
-  csth, snth = jnp.cos(theta), jnp.sin(theta)
-  csph, snph = jnp.cos(phi), jnp.sin(phi)
-  cs2ph, sn2ph = jnp.cos(2*phi), jnp.sin(2*phi)
-  #Ljump = csth*X+snth*P
-  Ljump2 = jnp.matmul(Ljump, Ljump)#X2*csth**2 + P2*snth**2 + (XP + PX)*csth*snth
-  #Mjump = -snth*X+csth*P
-  #expX = jnp.trace(jnp.matmul(X, rho)).real
-  #expP = jnp.trace(jnp.matmul(P, rho)).real
-  expL = jnp.trace(jnp.matmul(Ljump, rho)).real
-  expM =jnp.trace(jnp.matmul(Mjump, rho)).real
-  delL = Ljump - expL*Id
-  delL2 =jnp.matmul(delL, delL) #Ljump2+expL**2-2*expL*Ljump
-  #delL2 = Ljump2+expL**2-2*expL*Ljump
-  varL = jnp.trace(jnp.matmul(delL2,rho)).real
-  delM = Mjump-expM*Id
-  addL = (delL2-varL*Id)/(2*tau)
-  ft = jnp.trace(jnp.matmul((jnp.matmul(addL,Ljump)+ jnp.matmul(Ljump,addL)) /2.0,rho).real)
-  gt = jnp.trace(jnp.matmul((jnp.matmul(addL,Mjump)+ jnp.matmul(Mjump,addL)) /2.0,rho).real)
-  #delh_tR_Mat = jnp.array([csph,snph,t*snph/(8.0*tau), -t*csph/(8.0*tau)])
-  #delh_tI_Mat = jnp.array([-snph,csph,t*csph/(8.0*tau), t*snph/(8.0*tau)])
-  delh_t_Mat = jnp.exp(-1j*phi)*jnp.array([1,1j,1j*t/(8.0*tau), -t/(8.0*tau)])
-  #htR = jnp.matmul(delh_tR_Mat, Initials) + csph*I_tR + snph*I_tI
-  #htI = jnp.matmul(delh_tI_Mat, Initials) - snph*I_tR + csph*I_tI
-  ht = jnp.matmul(delh_t_Mat, Initials) + jnp.exp(-1j*phi)*I_t
-  u = ht.real
-  #print (u)
-  H_update = -1j*(jnp.matmul(H, rho)-jnp.matmul(rho, H))
-  Lind_update = (jnp.matmul(jnp.matmul(Ljump,rho),Ljump)-jnp.matmul(Ljump2, rho)/2.0-jnp.matmul(rho, Ljump2)/2.0)/(4*tau)
-  Back_update = u*(jnp.matmul(delL, rho)+ jnp.matmul(rho, delL))*(1.0/(2*tau))
-  rho_update = (H_update+Lind_update+Back_update)*dt
-  rho = rho + rho_update
-  #rho = rho1#/rho1.tr()
-  #delI_tR_Mat = jnp.array([0.0,0.0,-sn2ph/(8*tau), cs2ph/(8*tau)])
-  #delI_tI_Mat = jnp.array([0.0,0.0,cs2ph/(8*tau), sn2ph/(8*tau)])
-  delI_t_Mat = jnp.array([0.0  ,0. , 1j*jnp.exp(1j*2*phi)/(8.0*tau), jnp.exp(1j*2*phi)/(8.0*tau) ])
-  #delI_tR_b = jnp.array([ft*csph-gt*snph])
-  #delI_tI_b = jnp.array([ft*snph+gt*csph])
-  delI_t_b = (ft+1j*gt)*jnp.exp(1j*phi) 
-  #I_tR = I_tR + (jnp.matmul(delI_tR_Mat, Initials) + delI_tR_b)*dt
-  #I_tI = I_tI + (jnp.matmul(delI_tI_Mat, Initials) + delI_tI_b)*dt
-  I_t = I_t + (delI_t_b + jnp.matmul(delI_t_Mat, Initials))*dt
-  #print (expM)
-  return rho, I_t

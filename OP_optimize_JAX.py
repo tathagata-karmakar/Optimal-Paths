@@ -53,7 +53,7 @@ torch.autograd.set_detect_anomaly(True)
 nlevels = 8
 rho_i = basis(nlevels,0)
 #rho_f = basis(nlevels,4)
-rho_f = coherent(nlevels, 0.5+1j*1.0)
+rho_f = coherent(nlevels, 0.5+1j*0.8)
 #rho_f = coherent(nlevels, 0.5)
 a = destroy(nlevels)
 t_i = 0
@@ -61,7 +61,7 @@ t_f = 3
 ts = np.linspace(t_i, t_f, 100)
 dt = ts[1]-ts[0]
 tau = 15.0
-nsteps = 1500
+nsteps = 2000
 X = (a+a.dag())/np.sqrt(2)
 P = (a-a.dag())/(np.sqrt(2)*1j)
 H = (X*X+P*P)/2.0
