@@ -101,7 +101,6 @@ I_tR = jnp.array([0.0])
 I_tI = jnp.array([0.0])
 #Initials1, jnpX, jnpP, jnpH, jnpX2, jnpP2, jnpXP, jnpPX, jnp_rho, I_tR, I_tI, theta_t, ts, tau, dt, l1 = rho_update(0,(Initials, jnpX, jnpP, jnpH, jnpX2, jnpP2, jnpXP, jnpPX, jnp_rho_i, I_tR, I_tI,  theta_t, ts, tau, dt, 0))
 #jnp_rho_simul = OPsoln_JAX1(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp.array(theta_t), jnp.array(ts), dt, tau, jnpId)
-rho_f_simul, X_simul, P_simul, varX_simul, covXP_simul, varP_simul = OPsoln_SHO(X, P, H, rho_i, alr, ali, A, B, ts, theta_t,  tau, 1)
 
 for n in range(nsteps):
   stime = time.time()
@@ -113,4 +112,6 @@ Initvals = np.array(Initials)
 
 PlotOP(Initvals, X, P, H, rho_i, rho_f, ts, theta_t, tau, 'tmpfig')
 
+rho_f_simul, X_simul, P_simul, varX_simul, covXP_simul, varP_simul = OPsoln_SHO(X, P, H, rho_i, Initvals[0], Initvals[1], Initvals[2], Initvals[3], ts, theta_t,  tau, 1)
+print ('Fidelity ', fidelity(rho_f_simul, rho_f))
 
