@@ -67,22 +67,22 @@ def fidelity1(rho_1, rho_2):
 for n in range(nsteps):
 
   rho_f_simul, X0, P0 = OPsoln_SHO(Ljump, Mjump, H, rho_i, alr, ali, A, B, ts,   theta_t, tau, 0)
-  f0 = -fidelity1(rho_f_simul,rho_f)
+  f0 = -fidelity(rho_f_simul,rho_f)
   print (n, f0, time.time()-tb)
   tb = time.time()
 
   rho_f_simul1, Xtmp, Ptmp = OPsoln_SHO(Ljump, Mjump, H, rho_i, alr+dc, ali, A, B, ts, theta_t, tau, 0)
-  f1 = -fidelity1(rho_f_simul1,rho_f)
+  f1 = -fidelity(rho_f_simul1,rho_f)
   delC1 = lrate*(f1-f0)/dc
   alr_update = -delC1
 
   rho_f_simul2, Xtmp, Ptmp = OPsoln_SHO(Ljump, Mjump, H, rho_i, alr, ali+dc, A, B, ts, theta_t, tau, 0)
-  f2 = -fidelity1(rho_f_simul2,rho_f)
+  f2 = -fidelity(rho_f_simul2,rho_f)
   delC2 = lrate*(f2-f0)/dc
   ali_update = -delC2
 
   rho_f_simul3, Xtmp, Ptmp = OPsoln_SHO(Ljump, Mjump, H, rho_i, alr, ali, A+dc, B, ts, theta_t, tau, 0)
-  f3 = -fidelity1(rho_f_simul3,rho_f)
+  f3 = -fidelity(rho_f_simul3,rho_f)
   delC3 = lrate*(f3-f0)/dc
   A_update = -delC3
 
