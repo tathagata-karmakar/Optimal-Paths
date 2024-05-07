@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Feb  9 14:44:46 2024
+Created on Mon May  6 18:45:15 2024
 
 @author: t_karmakar
 """
@@ -50,7 +50,7 @@ import torchvision.models as models
 #torch.backends.cuda.cufft_plan_cache[0].max_size = 32
 torch.autograd.set_detect_anomaly(True)
 
-nlevels = 15
+nlevels = 25
 
 #rho_f = coherent(nlevels, 0.5)
 a = destroy(nlevels)
@@ -62,48 +62,53 @@ tau = 15.0
 q4f = np.sqrt(1+4*tau*tau)-2*tau
 q3f = np.sqrt(4*tau*q4f)
 q5f = q3f*(1+q4f/(2*tau))
-rparam = np.sqrt(q4f**2+(q3f-q5f)**2/4.0)+(q3f+q5f)/2.0
-snh2r = np.sqrt(q4f**2+(q3f-q5f)**2/4.0)
+
+snh2r = -np.sqrt(q4f**2+(q3f-q5f)**2/4.0)
 csh2r = (q3f+q5f)/2.0
+rparam = snh2r+csh2r
 r_sq = np.log(rparam)/2
 xiR = r_sq*(q5f-q3f)/(2*snh2r)
-xiI = r_sq*(-q4f)/(snh2r)
+xiI = r_sq*(-q4f)/snh2r
 in_alr = 0.0
 in_ali = 0.0
 fin_alr = 1.7
 fin_ali = 0.8
 
 rho_i = squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
-
 #rho_f = basis(nlevels,4)
 rho_f = squeeze(nlevels,  xiR+1j*xiI)*coherent(nlevels, fin_alr+1j*fin_ali)
 rho_f_int = squeeze(nlevels,  xiR*np.cos(2*t_f)-xiI*np.sin(2*t_f)+1j*(xiI*np.cos(2*t_f)+xiR*np.sin(2*t_f)))*coherent(nlevels, fin_alr*np.cos(t_f)-fin_ali*np.sin(t_f)+1j*(fin_ali*np.cos(t_f)+fin_alr*np.sin(t_f)))
 
-
-nsteps = 3000
+nsteps = 2000
 X = (a+a.dag())/np.sqrt(2)
 P = (a-a.dag())/(np.sqrt(2)*1j)
 H = (X*X+P*P)/2.0
 #Ljump = X
 #Mjump = P
 rho_i = rho_i*rho_i.dag()
-#rho_i = thermal_dm(nlevels, 4)
 rho_f = rho_f*rho_f.dag()
 rho_f_int = rho_f_int*rho_f_int.dag()
 sigma_i = rand_herm(nlevels)
 sigma_i = sigma_i-expect(sigma_i, rho_i)
-xvec = np.linspace(-5,5,200)
-pvec = np.linspace(-5,5,200)
-W_i = wigner(rho_i,xvec,pvec)
 
-lrate = 1e-2
-q3, q4, q5, alr, ali, A, B, q1t, q2t, rop_prxq = OP_PRXQ_Params(X, P, rho_i, rho_f, ts, tau)
+XItf = X*np.cos(t_f)+P*np.sin(t_f)
+PItf = P*np.cos(t_f)-X*np.sin(t_f)
+
+Q1 = expect(XItf,rho_f_int)
+Q2 = expect(PItf,rho_f_int)
+V1 = expect(XItf*XItf,rho_f_int)-Q1**2
+V3 = expect(PItf*PItf,rho_f_int)-Q2**2
+V2 = (expect(XItf*PItf+PItf*XItf,rho_f_int)-2*Q1*Q2)/2.0
+
+lrate = 1e-1/2.0
+q3, q4, q5, alr, ali, A, B, q1t, q2t,rop_prxq = OP_PRXQ_Params(X, P, rho_i, rho_f, ts, tau)
+
 #alr = np.random.rand()
 #ali = np.random.rand()
 #A = np.random.rand()
 #B = np.random.rand()
 #Initials = jnp.array([alr, ali, A, B])
-Initials = jnp.array(np.random.rand(4))
+Initials = jnp.array(np.random.rand(9))
 theta_t = np.zeros(len(ts))
 jnptheta_t = jnp.array(theta_t)
 tb = 0
@@ -111,28 +116,16 @@ jnpId = jnp.identity(nlevels)
 jnpX = jnp.array(X.full())
 jnpP = jnp.array(P.full())
 jnpH = jnp.array(H.full())
-jnpX2 = jnp.matmul(jnpX, jnpX)
-jnpP2 = jnp.matmul(jnpP, jnpP)
-jnpXP = jnp.matmul(jnpX, jnpP)
-jnpPX = jnp.matmul(jnpP, jnpX)
 jnp_rho_i = jnp.array(rho_i.full())
 jnp_rho_f = jnp.array(rho_f_int.full())
 
-I_tR = jnp.array([0.0])
-I_tI = jnp.array([0.0])
-#Initials1, jnpX, jnpP, jnpH, jnpX2, jnpP2, jnpXP, jnpPX, jnp_rho, I_tR, I_tI, theta_t, ts, tau, dt, l1 = rho_update(0,(Initials, jnpX, jnpP, jnpH, jnpX2, jnpP2, jnpXP, jnpPX, jnp_rho_i, I_tR, I_tI,  theta_t, ts, tau, dt, 0))
-#jnp_rho_simul = OPsoln_JAX1(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp.array(theta_t), jnp.array(ts), dt, tau, jnpId)
-
 for n in range(nsteps):
   stime = time.time()
-  print (CostF_strat(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, jnpId))
-  Initials = update_strat(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, jnpId, lrate)
+  print (CostF_control_l10(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, jnpId))
+  Initials = update_control_l10(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, jnpId, lrate)
   print (n, time.time()-stime)
-
+  
+  
 Initvals = np.array(Initials)
 
-PlotOP(Initvals, X, P, H, rho_i, rho_f, ts, theta_t, tau, 'tmpfigs')
-
-rho_f_simul, X_simul, P_simul, varX_simul, covXP_simul, varP_simul, rop, nbar = OPsoln_strat_SHO(X, P, H, rho_i, Initvals[0], Initvals[1], Initvals[2], Initvals[3], ts, theta_t,  tau, 1)
-print ('Fidelity ', fidelity(rho_f_simul, rho_f_int))
-
+PlotOP(Initvals, X, P, H, rho_i, rho_f, ts, theta_t, tau, 'tmpfig_control')
