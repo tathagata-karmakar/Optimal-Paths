@@ -444,69 +444,7 @@ def OPsoln_control_l10(X, P, H, rho_i, alr, ali, A, B, Cv, k0r, k0i, Dvp, Dvm,  
     return rho, expLs, expMs
 
 
-
 def rho_update_control_l10(i, Input_Initials): #Optimal control integration with \lambda_1=0
-  Initials, X, P, H, rho, I_t, I_k_t, I_Gp_t, I_G_t, theta, ts, tau, dt, j, Id = Input_Initials
-  #I_t = I_tR + 1j*I_tI
-  #print (tau)
-  t = ts[j]
-  #theta = theta_t[j]
-  phi = theta+t
-  #csth, snth = jnp.cos(theta), jnp.sin(theta)
-  csph, snph = jnp.cos(phi), jnp.sin(phi)
-  #cs2ph, sn2ph = jnp.cos(2*phi), jnp.sin(2*phi)
-  Ljump = csph*X+snph*P
-  Ljump2 = jnp.matmul(Ljump, Ljump)#X2*csth**2 + P2*snth**2 + (XP + PX)*csth*snth
-  #Mjump = -snph*X+csph*P
-  expX = jnp.trace(jnp.matmul(X, rho)).real
-  expP = jnp.trace(jnp.matmul(P, rho)).real
-  expV = jnp.trace(jnp.matmul(Ljump2, rho)).real
-  expL = csph*expX + snph*expP
-  #exphi = 
-  #expM = -snph*expX + csph*expP
-  delL = Ljump - expL*Id
-  delV = Ljump2-expV*Id
-  delh_t_Mat = jnp.exp(-1j*phi)*jnp.array([1,1j,1j*t/(8.0*tau), -t/(8.0*tau),0,0,0,0,0])
-  ht = jnp.matmul(delh_t_Mat, Initials) + jnp.exp(-1j*phi)*I_t
-  r = ht.real
-  v = ht.imag
-  wzmat = jnp.array([0,0,1,1j,0,0,0,0,0])
-  wz = jnp.matmul(wzmat, Initials)*jnp.exp(-1j*phi)
-  w = wz.real
-  z = wz.imag
-  delk_t_Mat=jnp.exp(1j*2*phi)*jnp.array([0,0,0,0,0,1,1j,0,0])
-  kappa = jnp.matmul(delk_t_Mat,Initials)+jnp.exp(1j*2*phi)*I_k_t
-  kappaLM = kappa.imag
-  llcoeff = jnp.array([0,0,0,0,1+1j*0,0,0,0,0])
-  kappaLL=jnp.matmul(llcoeff, Initials).real-kappa.real
-  
-  Gpmat = jnp.array([0,0,0,0,0,0,0,1+1j*0,0])
-  Gp = jnp.matmul(Gpmat, Initials)+I_Gp_t
-  Gmmat = jnp.array([0,0,0,0,0,0,0,0,1+1j*0])
-  prodmat = np.zeros((9,9),dtype=np.complex_)
-  prodmat[0,1]=1j
-  prodmat = jnp.array(prodmat)
-  G0 = jnp.matmul(Gmmat, Initials)+jnp.matmul(jnp.matmul(jnp.transpose(Initials),prodmat),Initials)
-  G = jnp.exp(1j*2*phi)*(G0+I_G_t)
-  Gr = G.real
-  GLL=Gp-Gr
-  #H_update = -1j*(jnp.matmul(H, rho)-jnp.matmul(rho, H))
-  Lind_update = (-jnp.matmul(delV, rho)-jnp.matmul(rho, delV))/(4*tau)
-  read_update = r*(jnp.matmul(delL, rho)+ jnp.matmul(rho, delL))*(1.0/(2*tau))
-  rho1 = rho + (Lind_update+read_update)*dt
-  delI_t_Mat = jnp.exp(1j*2*phi)*jnp.array([0.0 ,0.,1j/(8.0*tau), 1.0/(8.0*tau),0.0,0.0,0.0,0.0,0.0 ])
-  I_t1 = I_t + jnp.matmul(delI_t_Mat, Initials)*dt
-  I_k_t1 = I_k_t+1j*jnp.exp(-1j*2*phi)*(GLL-r**2)*dt/tau
-  I_Gp_t1 = I_Gp_t+(kappaLM-r*z)*dt/(4*tau)
-  int_matrix1 = jnp.array([0,0,0,0.0,1j,0,0,0,0])
-  int_matrix2 = jnp.array([0,0,-1j,-1.0,0,0,0,0,0])
-  
-  I_G_t1 = I_G_t+dt*((jnp.matmul(int_matrix1,Initials)-1j*kappa)*jnp.exp(-1j*2*phi)+jnp.matmul(int_matrix2,Initials)*r*jnp.exp(-1j*phi))/(4*tau)
-  theta1 = theta + dt*((2*r*w-kappaLL)/((4*r**2-4*v**2+8*Gr)*tau)-1)
-  return (Initials, X, P, H, rho1, I_t1, I_k_t1, I_Gp_t1, I_G_t1, theta1, ts, tau, dt, j+1, Id)
-
-
-def rho_update_control_l101(i, Input_Initials): #Optimal control integration with \lambda_1=0
   Initials, X, P, H, rho, I_t, I_kvp_t, I_k_t, I_Gvp_t, I_G_t,  kappaLL0, kappaLM0, kappaMM0, GLL0, GLM0,  GMM0, Idth,   theta, ts, tau, dt, j, Id = Input_Initials
   #I_t = I_tR + 1j*I_tI
   #print (tau)
@@ -600,7 +538,7 @@ def rho_update_control_l101(i, Input_Initials): #Optimal control integration wit
   return (Initials, X, P, H, rho1, I_t1, I_kvp_t1, I_k_t1, I_Gvp_t1, I_G_t1, kappaLL0, kappaLM0, kappaMM0, GLL0, GLM0,  GMM0, Idth,  theta1, ts, tau, dt, j+1, Id)
 
 
-def OPsoln_control_l10_JAX1(Initials, X, P, H, rho_i, theta_t, ts, dt,  tau, Id):
+def OPsoln_control_l10_JAX(Initials, X, P, H, rho_i, theta_t, ts, dt,  tau, Id):
   #I_tR = jnp.array([0.0])
   I_t = jnp.array(0.0+1j*0.0)
   I_kvp_t = jnp.array(0.0)
@@ -645,28 +583,13 @@ def OPsoln_control_l10_JAX1(Initials, X, P, H, rho_i, theta_t, ts, dt,  tau, Id)
   #rho_update(Initials, X, P, H, X2, P2, XP, PX, rho, I_tR, I_tI, i, theta_t, ts, tau, dt)
   return rho, Idth
 
-def OPsoln_control_l10_JAX(Initials, X, P, H, rho_i, theta_t, ts, dt,  tau, Id):
-  #I_tR = jnp.array([0.0])
-  I_t = jnp.array([0.0 + 1j*0.0])
-  I_k_t = jnp.array([0.0 + 1j*0.0])
-  I_Gp_t = jnp.array([0.0 + 1j*0.0])
-  I_G_t = jnp.array([0.0 + 1j*0.0])
-  rho = rho_i
-  phi = jnp.array([theta_t[0]+ts[0]])
-  theta = jnp.array([0.0])
-  k1=0
-  Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t, theta, ts, tau, dt, k1, Id = jax.lax.fori_loop(0, len(ts)-1, rho_update_control_l101,(Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t, theta, ts, tau, dt, k1, Id))
-  #rho_update(Initials, X, P, H, X2, P2, XP, PX, rho, I_tR, I_tI, i, theta_t, ts, tau, dt)
-  return rho
-
-
 def CostF_control_l10(Initials, X, P, H,  rho_i, rho_f, theta_t, ts, dt, tau, Id):
-  rho_f_simul, Idth = OPsoln_control_l10_JAX1(Initials, X, P, H, rho_i, theta_t, ts, dt, tau, Id)
+  rho_f_simul, Idth = OPsoln_control_l10_JAX(Initials, X, P, H, rho_i, theta_t, ts, dt, tau, Id)
   #print (Idth)
   return 1e2*Tr_Distance(rho_f_simul, rho_f)
 
 def CostF_control_l101(Initials, X, P, H,  rho_i, rho_f, theta_t, ts, dt, tau, Id):
-  rho_f_simul, Idth = OPsoln_control_l10_JAX1(Initials, X, P, H, rho_i, theta_t, ts, dt, tau, Id)
+  rho_f_simul, Idth = OPsoln_control_l10_JAX(Initials, X, P, H, rho_i, theta_t, ts, dt, tau, Id)
   return 1e2*Tr_Distance(rho_f_simul, rho_f), Idth
 
 @jit
@@ -808,65 +731,3 @@ def OPintegrate_strat(Initials, X, P, H, rho_i, ts, dt,  tau, Id):
       j+=1
   #Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5 = jax.lax.fori_loop(0, len(ts), rho_integrate_JAX,(Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5))
   return Q1,Q2,Q3,Q4,Q5, theta_t, rho , diff
-
-def rho_integrate_JAX(i, Input_Initials): #Optimal control integration with \lambda_1=0
-  Initials, X, P, H, rho, I_t, I_k_t, I_Gp_t, I_G_t,   phi,  ts, tau, dt, j, Id, Q1, Q2, Q3, Q4, Q5 = Input_Initials
-  #I_t = I_tR + 1j*I_tI
-  #print (tau)
-  t = ts[j]
-  #theta = theta_t[j]
-  #theta_t[j]=phi.item()-t.item()
-  #csth, snth = jnp.cos(theta), jnp.sin(theta)
-  csph, snph = jnp.cos(phi), jnp.sin(phi)
-  #cs2ph, sn2ph = jnp.cos(2*phi), jnp.sin(2*phi)
-  Ljump = csph*X+snph*P
-  Ljump2 = jnp.matmul(Ljump, Ljump)#X2*csth**2 + P2*snth**2 + (XP + PX)*csth*snth
-  #Mjump = -snph*X+csph*P
-  expX = jnp.trace(jnp.matmul(X, rho)).real
-  expP = jnp.trace(jnp.matmul(P, rho)).real
-  expV = jnp.trace(jnp.matmul(Ljump2, rho)).real
-  expL = csph*expX + snph*expP
-  #exphi = 
-  expM = -snph*expX + csph*expP
-  Q1.at[j].set=expL
-  Q2.at[j].set=expM
-  delL = Ljump - expL*Id
-  delV = Ljump2-expV*Id
-  delh_t_Mat = jnp.exp(-1j*phi)*jnp.array([1,1j,1j*t/(8.0*tau), -t/(8.0*tau),0,0,0,0,0])
-  ht = jnp.matmul(delh_t_Mat, Initials) + jnp.exp(-1j*phi)*I_t
-  r = ht.real
-  v = ht.imag
-  wzmat = jnp.array([0,0,1,1j,0,0,0,0,0])
-  wz = jnp.matmul(wzmat, Initials)*jnp.exp(-1j*phi)
-  w = wz.real
-  z = wz.imag
-  delk_t_Mat=jnp.exp(1j*2*phi)*jnp.array([0,0,0,0,0,1,1j,0,0])
-  kappa = jnp.matmul(delk_t_Mat,Initials)+jnp.exp(1j*2*phi)*I_k_t
-  kappaLM = kappa.imag
-  llcoeff = jnp.array([0,0,0,0,1+1j*0,0,0,0,0])
-  kappaLL=jnp.matmul(llcoeff, Initials).real-kappa.real
-  
-  Gpmat = jnp.array([0,0,0,0,0,0,0,1+1j*0,0])
-  Gp = jnp.matmul(Gpmat, Initials)+I_Gp_t
-  Gmmat = jnp.array([0,0,0,0,0,0,0,0,1+1j*0])
-  prodmat = np.zeros((9,9),dtype=np.complex_)
-  prodmat[0,1]=1j
-  prodmat = jnp.array(prodmat)
-  G0 = jnp.matmul(Gmmat, Initials)+jnp.matmul(jnp.matmul(jnp.transpose(Initials),prodmat),Initials)
-  G = jnp.exp(1j*2*phi)*(G0+I_G_t)
-  Gr = G.real
-  GLL=Gp-Gr
-  #H_update = -1j*(jnp.matmul(H, rho)-jnp.matmul(rho, H))
-  Lind_update = (-jnp.matmul(delV, rho)-jnp.matmul(rho, delV))/(4*tau)
-  read_update = r*(jnp.matmul(delL, rho)+ jnp.matmul(rho, delL))*(1.0/(2*tau))
-  rho1 = rho + (Lind_update+read_update)*dt
-  delI_t_Mat = jnp.exp(1j*2*phi)*jnp.array([0.0 ,0.,1j/(8.0*tau), 1.0/(8.0*tau), 0, 0, 0, 0, 0 ])
-  I_t1 = I_t + jnp.matmul(delI_t_Mat, Initials)*dt
-  I_k_t1 = I_k_t+1j*jnp.exp(-1j*2*phi)*(GLL-r**2)*dt/tau
-  I_Gp_t1 = I_Gp_t+(kappaLM-r*z)*dt/(4*tau)
-  int_matrix1 = jnp.array([0,0,0,0.0,1j,0,0,0,0])
-  int_matrix2 = jnp.array([0,0,-1j,-1.0,0,0,0,0,0])
-  
-  I_G_t1 = I_G_t+dt*((jnp.matmul(int_matrix1,Initials)-1j*kappa)*jnp.exp(-1j*2*phi)+jnp.matmul(int_matrix2,Initials)*r*jnp.exp(-1j*phi))/(4*tau)
-  phi1 = phi + dt*1#((2*r*w-kappaLL)/((4*r**2-4*v**2+8*Gr)*tau))
-  return (Initials, X, P, H, rho1, I_t1, I_k_t1, I_Gp_t1, I_G_t1,   phi1, ts, tau, dt, j+1, Id, Q1, Q2, Q3, Q4, Q5)
