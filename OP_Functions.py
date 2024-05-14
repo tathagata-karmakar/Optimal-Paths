@@ -579,7 +579,7 @@ def OPsoln_control_l10_JAX(Initials, X, P, H, rho_i, theta_t, ts, dt,  tau, Id):
   theta = jnp.array(0.0)
   k1=0
   Idth=0
-  Initials, X, P, H,  rho, I_t, I_kvp_t, I_k_t, I_Gvp_t, I_G_t, kappaLL0, kappaLM0, kappaMM0, GLL0, GLM0, GMM0, Idth,  theta, ts, tau, dt, k1, Id = jax.lax.fori_loop(0, len(ts)-1, rho_update_control_l101,(Initials, X, P, H,  rho, I_t, I_kvp_t, I_k_t, I_Gvp_t, I_G_t, kappaLL0, kappaLM0, kappaMM0, GLL0, GLM0,  GMM0, Idth,  theta, ts, tau, dt, k1, Id))
+  Initials, X, P, H,  rho, I_t, I_kvp_t, I_k_t, I_Gvp_t, I_G_t, kappaLL0, kappaLM0, kappaMM0, GLL0, GLM0, GMM0, Idth,  theta, ts, tau, dt, k1, Id = jax.lax.fori_loop(0, len(ts)-1, rho_update_control_l10,(Initials, X, P, H,  rho, I_t, I_kvp_t, I_k_t, I_Gvp_t, I_G_t, kappaLL0, kappaLM0, kappaMM0, GLL0, GLM0,  GMM0, Idth,  theta, ts, tau, dt, k1, Id))
   #rho_update(Initials, X, P, H, X2, P2, XP, PX, rho, I_tR, I_tI, i, theta_t, ts, tau, dt)
   return rho, Idth
 
