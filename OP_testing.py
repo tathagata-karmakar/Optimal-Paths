@@ -40,15 +40,15 @@ from typing import Iterable
 from jaxopt import OptaxSolver
 import optax
 
-import torch
-from torch import nn
-from torch.utils.data import DataLoader,Dataset
-from torchvision import datasets
-from torchvision.io import read_image
-from torchvision.transforms import ToTensor, Lambda
-import torchvision.models as models
-#torch.backends.cuda.cufft_plan_cache[0].max_size = 32
-torch.autograd.set_detect_anomaly(True)
+#import torch
+#from torch import nn
+#from torch.utils.data import DataLoader,Dataset
+#from torchvision import datasets
+#from torchvision.io import read_image
+#from torchvision.transforms import ToTensor, Lambda
+#import torchvision.models as models
+##torch.backends.cuda.cufft_plan_cache[0].max_size = 32
+#torch.autograd.set_detect_anomaly(True)
 
 nlevels = 25
 
