@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon May  6 18:45:15 2024
+Created on Tue May 14 13:23:37 2024
 
 @author: t_karmakar
 """
@@ -21,6 +21,7 @@ from pylab import rcParams
 from matplotlib import colors
 from qutip import *
 from OP_Functions import *
+from OP_Functions_tmp import *
 os.environ["PATH"] += os.pathsep + '/Library/TeX/texbin'
 rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
 rc('text',usetex=True)
@@ -40,15 +41,6 @@ from typing import Iterable
 from jaxopt import OptaxSolver
 import optax
 
-#import torch
-#from torch import nn
-#from torch.utils.data import DataLoader,Dataset
-#from torchvision import datasets
-#from torchvision.io import read_image
-#from torchvision.transforms import ToTensor, Lambda
-#import torchvision.models as models
-##torch.backends.cuda.cufft_plan_cache[0].max_size = 32
-#torch.autograd.set_detect_anomaly(True)
 
 nlevels = 25
 
@@ -56,7 +48,7 @@ nlevels = 25
 a = destroy(nlevels)
 t_i = 0
 t_f = 3
-ts = np.linspace(t_i, t_f, 600)
+ts = np.linspace(t_i, t_f, 500)
 dt = ts[1]-ts[0]
 tau = 5.0
 q4f = np.sqrt(1+4*tau*tau)-2*tau
@@ -83,7 +75,7 @@ rho_i = squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
 rho_f = squeeze(nlevels,  xiR+1j*xiI)*coherent(nlevels, fin_alr+1j*fin_ali)
 rho_f_int = squeeze(nlevels,  xiR*np.cos(2*t_f)-xiI*np.sin(2*t_f)+1j*(xiI*np.cos(2*t_f)+xiR*np.sin(2*t_f)))*coherent(nlevels, fin_alr*np.cos(t_f)-fin_ali*np.sin(t_f)+1j*(fin_ali*np.cos(t_f)+fin_alr*np.sin(t_f)))
 
-nsteps = 2000
+nsteps = 2500
 X = (a+a.dag())/np.sqrt(2)
 P = (a-a.dag())/(np.sqrt(2)*1j)
 H = (X*X+P*P)/2.0
@@ -92,8 +84,8 @@ H = (X*X+P*P)/2.0
 rho_i = rho_i*rho_i.dag()
 rho_f = rho_f*rho_f.dag()
 rho_f_int = rho_f_int*rho_f_int.dag()
-#sigma_i = rand_herm(nlevels)
-#sigma_i = sigma_i-expect(sigma_i, rho_i)
+sigma_i = rand_herm(nlevels)
+sigma_i = sigma_i-expect(sigma_i, rho_i)
 
 XItf = X*np.cos(t_f)+P*np.sin(t_f)
 PItf = P*np.cos(t_f)-X*np.sin(t_f)
@@ -111,34 +103,26 @@ Q5i = 2*(expect(P*P,rho_i)-Q2i**2)
 Q4i = (expect(P*X+X*P,rho_i)-2*Q2i*Q1i)
 
 lrate = 1e-2
+q3, q4, q5, alr, ali, A, B, q1t, q2t,rop_prxq = OP_PRXQ_Params(X, P, rho_i, rho_f, ts, tau)
 
-inits = 10*(np.random.rand(10)-0.5)
-#inits=np.array([-0.20454815,  3.12661525, -3.10051494,  2.90454994,  0.66154927,
-      # -0.17223483,  3.55780393, -0.66664125, -4.43558925, -3.96721373])
-np_Idmat=np.identity(10)
-Idmat = jnp.array(np_Idmat)
-
-
-#inits[4]=2*alr-k0r-4*(alr**2-ali**2+2*Dvm)*tau
+Ncos = 15
+#NC = 2*Ncos
+inits1 = 5*(np.random.rand(10)-0.5)
+inits2 = 5*(np.random.rand(2*Ncos)-0.5)
+inits = np.concatenate((inits1, inits2))
+Fmat = Fourier_mat(Ncos, t_i, t_f, ts)
+Fmat = jnp.array(Fmat)
 Initials = jnp.array(inits)
-G100 = jnp.matmul(Idmat[0], Initials)
-G010 = jnp.matmul(Idmat[1], Initials)
-k100 = jnp.matmul(Idmat[2], Initials)
-k010 = jnp.matmul(Idmat[3], Initials)
-G200 = jnp.matmul(Idmat[4], Initials)
-G110 = jnp.matmul(Idmat[5], Initials)
-G020 = jnp.matmul(Idmat[6], Initials)
-k200 = jnp.matmul(Idmat[7], Initials)
-k110 = jnp.matmul(Idmat[8], Initials)
-k020 = jnp.matmul(Idmat[9], Initials)
-AGamma0 = (G100**2-G010**2-G200+G020)/2.0
-BGamma0 = G100*G010-G110
-theta0 = jnp.arctan2(BGamma0, AGamma0)/2.0
+#Coeffs = 0*Coeffs
+
+#inits = 5*(np.random.rand(10)-0.5)
+#inits[0]=expect(X,rho_i).real
+#inits = np.array([ 2.03119478, -0.64861863,  3.06237402,  3.65953078,  3.56056756,
+       #-0.66798523, -3.0849589 , -2.22235786, -1.85641707])
+alr, ali, A, B, Cv, k0r, k0i, Dvp, Dvm, GLM0 = inits[0], inits[1], inits[2], inits[3], inits[4], inits[5], inits[6], inits[7], inits[8], inits[9]
+#Initials = jnp.array(inits)
 
 
-theta_t = np.zeros(len(ts))
-jnptheta_t = jnp.array(theta_t)
-tb = 0
 jnpId = jnp.identity(nlevels, dtype=complex)
 jnpX = jnp.array(X.full())
 jnpP = jnp.array(P.full())
@@ -146,57 +130,42 @@ jnpH = jnp.array(H.full())
 jnp_rho_i = jnp.array(rho_i.full())
 jnp_rho_f_int = jnp.array(rho_f_int.full())
 jnp_rho_f = jnp.array(rho_f.full())
-
-
-for n in range(nsteps):
-  stime = time.time()
-  print (CostF_control_l101(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId))
-  Initials = update_control_l10(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId, lrate)
-  #if (n>nsteps/4):
-  Initials = update_control2_l10(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId, lrate)
-  #print (Initials)
-  print (n, time.time()-stime)
-  
-
-  
-Initvals = np.array(Initials)
-q3, q4, q5, alr, ali, A, B, q1t, q2t, rop_prxq = OP_PRXQ_Params(X, P, rho_i, rho_f, ts, tau)
-
-G100 = np.matmul(np_Idmat[0], Initvals)
-G010 = np.matmul(np_Idmat[1], Initvals)
-k100 = np.matmul(np_Idmat[2], Initvals)
-k010 = np.matmul(np_Idmat[3], Initvals)
-G200 = np.matmul(np_Idmat[4], Initvals)
-G110 = np.matmul(np_Idmat[5], Initvals)
-G020 = np.matmul(np_Idmat[6], Initvals)
-k200 = np.matmul(np_Idmat[7], Initvals)
-k110 = np.matmul(np_Idmat[8], Initvals)
-k020 = np.matmul(np_Idmat[9], Initvals)
-#rho_f_simul1, X_simul1, P_simul1, varX_simul1, covXP_simul1, varP_simul1, rop_strat,nbar, theta_t = OPsoln_control_l10(X, P, H, rho_i, alr, ali, A, B, Cv, k0r, k0i, Dvp, Dvm, ts,   tau, 1)
-#rho_f_simuld, X_simuld, P_simuld, varX_simuld, covXP_simuld, varP_simuld, rop_stratd,nbard = OPsoln_strat_SHO(X, P, H, rho_i, alr, ali, A, B, ts, theta_t,  tau, 1)# OPsoln_control_l10(X, P, H, rho_i, alr, ali, A, B, Cv, k0r, k0i, Dvp, Dvm, ts,   tau, 1)
-
-Q1j, Q2j, Q3j, Q4j, Q5j, theta_tj, rho_f_simul2, rop_stratj, diff = OPintegrate_strat(Initvals, X.full(), P.full(), H.full(), rho_i.full(), ts, dt,  tau,  np_Idmat, np.identity(nlevels))
-a = (X+1j*P)/np.sqrt(2)
 q1i = expect(X,rho_i)
 q1f = expect(X,rho_f)
 q2i = expect(P,rho_i)
 q2f = expect(P,rho_f)
+MMat1, MMat2 = Multiply_Mat(tau, Ncos)
+for n in range(nsteps):
+  stime = time.time()
+  print (CostFt_control_l10_2input(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, Fmat, ts, dt, tau, Ncos, MMat1, MMat2, jnpId))
+  Initials = update_control1_l10_2input(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, Fmat, ts, dt, tau, Ncos, MMat1, MMat2, jnpId, lrate)
+  Initials = update_control2_l10_2input(Initials,  jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, Fmat, ts, dt, tau, Ncos, MMat1, MMat2, jnpId, lrate)
+  #print (Initials)
+  print (n, time.time()-stime)
+  
+Initvals = np.array(Initials)
+theta_t = 0.1*jnp.tanh(10*jnp.matmul(Fmat, Initials))
 
 
-t_i, t_f = ts[0], ts[-1]
+q3, q4, q5, alr, ali, A, B, q1t, q2t, rop_prxq = OP_PRXQ_Params(X, P, rho_i, rho_f, ts, tau)
+Q1j, Q2j, Q3j, Q4j, Q5j,  rho_f_simul2, rop, diff, Hs = OPintegrate_strat_2inputs(Initials,  X.full(), P.full(), H.full(), rho_i.full(), theta_t, ts, dt,  tau, Ncos, MMat1, MMat2, np.identity(nlevels))
+
+
+  
 fig, axs = plt.subplots(8,1,figsize=(6,14),sharex='all')
 axs[0].plot(ts, q1t, linewidth =4, color = 'green', label = 'PRXQ')
-axs[0].plot(ts, Q1j, color='k')
+axs[0].plot(ts, Q1j, color='k', label = 'w control')
 #axs[0].plot(ts, X_simul, linewidth =4, linestyle = 'dashed', color = 'blue', label = 'Ito')
-axs[0].plot(ts, Q1j, linewidth =3, color='blue', label = 'w control')
-#axs[0].plot(ts, X_simul1, linewidth =3, linestyle = 'dashed', color = 'red')
+#axs[0].plot(ts, Q1j, linewidth =3, color='k')
+#axs[0].plot(ts, X_simul1, linewidth =3, linestyle = 'dashed', color = 'red', label = 'General')
 #axs[0].plot(ts, X_simuld, linewidth =3, linestyle = 'dashed', color = 'blue', label = 'General')
 axs[0].plot(t_i, q1i, "o", color = 'b')
 axs[0].plot(t_f, q1f, "X" , color = 'r')
-axs[0].plot(t_f, Q1, "^" , color = 'blue')
+#axs[0].plot(t_f, Q1, "^" , color = 'k')
+
 axs[1].plot(ts, q2t, linewidth = 4, color = 'green')
 #axs[1].plot(ts, P_simul, linewidth =4, linestyle = 'dashed', color = 'blue')
-axs[1].plot(ts, Q2j, linewidth =3, color='blue')
+axs[1].plot(ts, Q2j, linewidth =3, color='k')
 #axs[1].plot(ts, P_simul1, linewidth =3, linestyle = 'dashed', color = 'red')
 #axs[1].plot(ts, P_simuld, linewidth =3, linestyle = 'dashed', color = 'blue')
 axs[1].plot(t_i, q2i, "o", color = 'b')
@@ -209,7 +178,7 @@ axs[1].tick_params(labelsize=15)
 axs[0].legend(loc=4,fontsize=12)
 
 axs[2].axhline(q3/2.0, linewidth =4, color = 'green', label = 'PRXQ')
-axs[2].plot(ts, Q3j, linewidth =3, color='blue')
+axs[2].plot(ts, Q3j, linewidth =3, color='k')
 #axs[2].plot(ts, varX_simul, linewidth =4, linestyle = 'dashed', color = 'blue', label = 'Ito')
 #axs[2].plot(ts, varX_simul1, linewidth =3, linestyle = 'dashed', color = 'red', label = 'Strato')
 #axs[2].plot(ts, varX_simuld, linewidth =3, linestyle = 'dashed', color = 'blue', label = 'Strato')
@@ -220,14 +189,14 @@ axs[2].plot(t_f, expect((X-q1f)*(X-q1f), rho_f), "X", color = 'r')
 axs[3].axhline(q4/2.0, linewidth =4, color = 'green', label = 'PRXQ')
 #axs[3].plot(ts, covXP_simul, linewidth =4, linestyle = 'dashed', color = 'blue', label = 'Ito')
 #axs[3].plot(ts, covXP_simul1, linewidth =3, linestyle = 'dashed', color = 'red', label = 'Strato')
-axs[3].plot(ts, Q4j, linewidth =3, color='blue')
+axs[3].plot(ts, Q4j, linewidth =3, color='k')
 #axs[3].plot(ts, covXP_simuld, linewidth =3, linestyle = 'dashed', color = 'blue', label = 'Strato')
 axs[3].plot(t_i, expect((X-q1i)*(P-q2i)/2.0+(P-q2i)*(X-q1i)/2.0, rho_i), "o", color = 'b')
 axs[3].plot(t_f, expect((X-q1f)*(P-q2f)/2.0+(P-q2f)*(X-q1f)/2.0, rho_f), "X", color = 'r')
 #axs[3].plot(t_f, V2, "^" , color = 'k')
 
 axs[4].axhline(q5/2.0, linewidth =4, color = 'green', label = 'PRXQ')
-axs[4].plot(ts, Q5j, linewidth =3, color='blue')
+axs[4].plot(ts, Q5j, linewidth =3, color='k')
 #axs[4].plot(ts, varP_simul, linewidth =4, linestyle = 'dashed', color = 'blue', label = 'Ito')
 #axs[4].plot(ts, varP_simul1, linewidth =3, linestyle = 'dashed', color = 'red', label = 'Starto')
 #axs[4].plot(ts, varP_simuld, linewidth =3, linestyle = 'dashed', color = 'blue', label = 'Starto')
@@ -236,21 +205,21 @@ axs[4].plot(t_f, expect((P-q2f)*(P-q2f), rho_f), "X", color = 'r')
 #axs[4].plot(t_f, V3, "^" , color = 'k')
 
 axs[5].plot(ts, rop_prxq, linewidth =4, color='green')
-axs[5].plot(ts, rop_stratj,linewidth =3, color='blue', linestyle='dashed')
+axs[5].plot(ts, rop,linewidth =3, color='k')
 #axs[5].plot(ts, rop_stratd,linewidth =3, color='blue', linestyle='dashed')
 #axs[5].plot(ts, nbar, color='red', linestyle ='dashed', linewidth = 3)
-axs[6].plot(ts, np.zeros(len(ts)),linewidth =4, color='green')
-#axs[6].plot(ts, theta_t,linewidth =3, color='red', linestyle='dashed')
-axs[6].plot(ts, theta_tj,linewidth =3, color='blue', linestyle='dashed')
+#axs[6].plot(ts, np.zeros(len(ts)),linewidth =4, color='green')
+axs[6].plot(ts, theta_t,linewidth =3, color='k', linestyle='dashed')
+#axs[6].plot(ts, theta_tj,linewidth =3, color='k', linestyle='dashed')
 
-axs[7].plot(ts, diff, linewidth =3, color='blue', linestyle='dashed')
+axs[7].plot(ts, diff, linewidth =3, color='k', linestyle='dashed')
 
 axs[2].set_ylabel('var('+r'$X)$', fontsize = 15)
 axs[3].set_ylabel('cov('+r'$X,P)$', fontsize = 15)
 axs[4].set_ylabel('var('+r'$P)$', fontsize = 15)
 axs[5].set_ylabel('$r^\star$', fontsize = 15)
 axs[6].set_ylabel('$\\theta^\star$', fontsize = 15)
-axs[7].set_ylabel('$\Gamma(1,0)$', fontsize = 15)
+axs[7].set_ylabel('$\\tilde{\Gamma}_{\\textrm{LM}}-\\frac{1}{4}w_\\theta z_\\theta$', fontsize = 15)
 axs[7].set_xlabel('$t$', fontsize = 15)
 axs[2].tick_params(labelsize=15)
 axs[3].tick_params(labelsize=15)
@@ -258,6 +227,11 @@ axs[4].tick_params(labelsize=15)
 axs[5].tick_params(labelsize=15)
 axs[6].tick_params(labelsize=15)
 axs[7].tick_params(labelsize=15)
+
+
 plt.subplots_adjust(wspace=0.1, hspace=0.1)
-plt.savefig('/Users/t_karmakar/Library/CloudStorage/Box-Box/Research/Optimal_Path/Plots/control_l10_method34.pdf',bbox_inches='tight')
-#PlotOP(Initvals, X, P, H, rho_i, rho_f, ts, theta_t, tau, 'tmpfig_control')
+#plt.savefig('/Users/t_karmakar/Library/CloudStorage/Box-Box/Research/Optimal_Path/Plots/control_l10_method2_tmp.pdf',bbox_inches='tight')
+#plt.plot(ts, np.matmul(Fmat, cinits))
+#plt.plot(ts, jnp.matmul(Fmat, Coeffs))
+
+
