@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon May  6 18:45:15 2024
+Created on Fri Aug 16 17:11:11 2024
 
 @author: t_karmakar
 """
@@ -55,10 +55,10 @@ nlevels = 25
 #rho_f = coherent(nlevels, 0.5)
 a = destroy(nlevels)
 t_i = 0
-t_f = 3
-ts = np.linspace(t_i, t_f, 600)
+t_f = 5.0
+ts = np.linspace(t_i, t_f, int(t_f/0.01))
 dt = ts[1]-ts[0]
-tau = 5.0
+tau = 2.5
 q4f = np.sqrt(1+4*tau*tau)-2*tau
 q3f = np.sqrt(4*tau*q4f)
 q5f = q3f*(1+q4f/(2*tau))
@@ -71,19 +71,18 @@ xiR = r_sq*(q5f-q3f)/(2*snh2r)
 xiI = r_sq*(-q4f)/snh2r
 in_alr = .5
 in_ali = -.7
-fin_alr = -0.1#in_alr*np.cos(t_f)+in_ali*np.sin(t_f)
-fin_ali = 0.5#in_ali*np.cos(t_f)-in_alr*np.sin(t_f)
+fin_alr = 0#-0.1#in_alr*np.cos(t_f)+in_ali*np.sin(t_f)
+fin_ali = 0#0.5#in_ali*np.cos(t_f)-in_alr*np.sin(t_f)
 
 #xiR =0
 #xiI = 0
 
 
-rho_i = squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
+rho_i = squeeze(nlevels,  xiR+1j*xiI)*basis(nlevels, 1)#squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
 #rho_f = basis(nlevels,4)
 rho_f = squeeze(nlevels,  xiR+1j*xiI)*coherent(nlevels, fin_alr+1j*fin_ali)
-rho_f_int = squeeze(nlevels,  xiR*np.cos(2*t_f)-xiI*np.sin(2*t_f)+1j*(xiI*np.cos(2*t_f)+xiR*np.sin(2*t_f)))*coherent(nlevels, fin_alr*np.cos(t_f)-fin_ali*np.sin(t_f)+1j*(fin_ali*np.cos(t_f)+fin_alr*np.sin(t_f)))
+#rho_f_int = squeeze(nlevels,  xiR*np.cos(2*t_f)-xiI*np.sin(2*t_f)+1j*(xiI*np.cos(2*t_f)+xiR*np.sin(2*t_f)))*coherent(nlevels, fin_alr*np.cos(t_f)-fin_ali*np.sin(t_f)+1j*(fin_ali*np.cos(t_f)+fin_alr*np.sin(t_f)))
 
-nsteps = 2000
 X = (a+a.dag())/np.sqrt(2)
 P = (a-a.dag())/(np.sqrt(2)*1j)
 H = (X*X+P*P)/2.0
@@ -91,18 +90,6 @@ H = (X*X+P*P)/2.0
 #Mjump = P
 rho_i = rho_i*rho_i.dag()
 rho_f = rho_f*rho_f.dag()
-rho_f_int = rho_f_int*rho_f_int.dag()
-#sigma_i = rand_herm(nlevels)
-#sigma_i = sigma_i-expect(sigma_i, rho_i)
-
-XItf = X*np.cos(t_f)+P*np.sin(t_f)
-PItf = P*np.cos(t_f)-X*np.sin(t_f)
-
-Q1 = expect(XItf,rho_f_int)
-Q2 = expect(PItf,rho_f_int)
-V1 = expect(XItf*XItf,rho_f_int)-Q1**2
-V3 = expect(PItf*PItf,rho_f_int)-Q2**2
-V2 = (expect(XItf*PItf+PItf*XItf,rho_f_int)-2*Q1*Q2)/2.0
 
 Q1i = expect(X,rho_i)
 Q2i = expect(P,rho_i)
@@ -110,7 +97,7 @@ Q3i = 2*(expect(X*X,rho_i)-Q1i**2)
 Q5i = 2*(expect(P*P,rho_i)-Q2i**2)
 Q4i = (expect(P*X+X*P,rho_i)-2*Q2i*Q1i)
 
-lrate = 1e-2
+
 
 inits = 15*(np.random.rand(10)-0.5)
 #inits=np.array([-0.20454815,  3.12661525, -3.10051494,  2.90454994,  0.66154927,
@@ -144,24 +131,56 @@ jnpX = jnp.array(X.full())
 jnpP = jnp.array(P.full())
 jnpH = jnp.array(H.full())
 jnp_rho_i = jnp.array(rho_i.full())
-jnp_rho_f_int = jnp.array(rho_f_int.full())
+#jnp_rho_f_int = jnp.array(rho_f_int.full())
 jnp_rho_f = jnp.array(rho_f.full())
 
 
-for n in range(nsteps):
+#temp0 = 2000.0
+
+cost_b, J_b = CostF_control_l101(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId)
+Initials_c, cost_c = Initials, cost_b
+step_size = 0.5
+#temp = temp0
+metropolis = 1.0
+tempf = 0.05
+tempi = 2000.0
+temp = tempi
+lrate = 1e-2
+
+#for n in range(nsteps):
+nsteps = 30000
+n=0
+while temp>tempf and (n<nsteps):
   stime = time.time()
-  #lrate = lrate0/(1+n)
-  print (CostF_control_l101(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId))
-  Initials = update_control_l10(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId, lrate)
+  Initials_n = Initials_c+step_size*jnp.array(np.random.rand(10)-0.5)
+  cost_n, J_n = CostF_control_l101(Initials_n, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId)
+  if (cost_n<cost_b):
+      #if cost_n<=2.0 and  (J_n<=J_b):
+          #Initials, cost_b, J_b = Initials_n, cost_n, J_n
+      #elif cost_n>2.0:
+      Initials, cost_b, J_b = Initials_n, cost_n, J_n
+      print (n, cost_b, J_b, metropolis, temp)
+  diff = cost_n-cost_c
+  metropolis = jnp.exp(-diff/temp)
+  if (diff<0) or (jnp.array(np.random.rand())<metropolis):
+      Initials_c, cost_c = Initials_n, cost_n
+      temp = temp/(1+0.02*temp)
+  else:
+      temp = temp/(1-0.0002*temp)    
+  #Initials = update_control2_l10(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId, lrate)
+  #cost_b, J_b = CostF_control_l101(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId)
+  n+=1
+  #print (CostF_control_l101(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId))
+  #Initials = update_control_l10(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId, lrate)
   #if (n>nsteps/4):
-  Initials = update_control2_l10(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId, lrate)
+  #Initials = update_control2_l10(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId, lrate)
   #print (Initials)
-  print (n, time.time()-stime)
+ # print (n, time.time()-stime)
   
 
   
 Initvals = np.array(Initials)
-q3, q4, q5, alr, ali, A, B, q1t, q2t, rop_prxq = OP_PRXQ_Params(X, P, rho_i, rho_f, ts, tau)
+#q3, q4, q5, alr, ali, A, B, q1t, q2t, rop_prxq = OP_PRXQ_Params(X, P, rho_i, rho_f, ts, tau)
 
 G100 = np.matmul(np_Idmat[0], Initvals)
 G010 = np.matmul(np_Idmat[1], Initvals)
@@ -185,21 +204,16 @@ q2f = expect(P,rho_f)
 
 
 t_i, t_f = ts[0], ts[-1]
-fig, axs = plt.subplots(8,1,figsize=(6,14),sharex='all')
-axs[0].plot(ts, q1t, linewidth =4, color = 'green', label = 'PRXQ')
-axs[0].plot(ts, Q1j, color='k')
-#axs[0].plot(ts, X_simul, linewidth =4, linestyle = 'dashed', color = 'blue', label = 'Ito')
+fig, axs = plt.subplots(7,1,figsize=(6,14),sharex='all')
+#axs[0].plot(ts, q1t, linewidth =4, color = 'green', label = 'Gaussian')
 axs[0].plot(ts, Q1j, linewidth =3, color='blue', label = 'w control')
 #axs[0].plot(ts, X_simul1, linewidth =3, linestyle = 'dashed', color = 'red')
 #axs[0].plot(ts, X_simuld, linewidth =3, linestyle = 'dashed', color = 'blue', label = 'General')
 axs[0].plot(t_i, q1i, "o", color = 'b')
 axs[0].plot(t_f, q1f, "X" , color = 'r')
 #axs[0].plot(t_f, Q1, "^" , color = 'blue')
-axs[1].plot(ts, q2t, linewidth = 4, color = 'green')
-#axs[1].plot(ts, P_simul, linewidth =4, linestyle = 'dashed', color = 'blue')
+#axs[1].plot(ts, q2t, linewidth = 4, color = 'green')
 axs[1].plot(ts, Q2j, linewidth =3, color='blue')
-#axs[1].plot(ts, P_simul1, linewidth =3, linestyle = 'dashed', color = 'red')
-#axs[1].plot(ts, P_simuld, linewidth =3, linestyle = 'dashed', color = 'blue')
 axs[1].plot(t_i, q2i, "o", color = 'b')
 axs[1].plot(t_f, q2f, "X", color = 'r')
 #axs[1].plot(t_f, Q2, "^" , color = 'k')
@@ -207,58 +221,50 @@ axs[0].set_ylabel(r'$\left\langle \hat{X} \right\rangle$', fontsize = 15)
 axs[1].set_ylabel(r'$\left\langle \hat{P} \right\rangle$', fontsize = 15)
 axs[0].tick_params(labelsize=15)
 axs[1].tick_params(labelsize=15)
-axs[0].legend(loc=4,fontsize=12)
+axs[0].legend(loc=1,fontsize=15)
 
-axs[2].axhline(q3/2.0, linewidth =4, color = 'green', label = 'PRXQ')
+#axs[2].axhline(q3/2.0, linewidth =4, color = 'green', label = 'Gaussian')
 axs[2].plot(ts, Q3j, linewidth =3, color='blue')
-#axs[2].plot(ts, varX_simul, linewidth =4, linestyle = 'dashed', color = 'blue', label = 'Ito')
-#axs[2].plot(ts, varX_simul1, linewidth =3, linestyle = 'dashed', color = 'red', label = 'Strato')
-#axs[2].plot(ts, varX_simuld, linewidth =3, linestyle = 'dashed', color = 'blue', label = 'Strato')
 axs[2].plot(t_i, expect((X-q1i)*(X-q1i), rho_i), "o", color = 'b')
 axs[2].plot(t_f, expect((X-q1f)*(X-q1f), rho_f), "X", color = 'r')
-#axs[2].plot(t_f, V1, "^" , color = 'k')
 
-axs[3].axhline(q4/2.0, linewidth =4, color = 'green', label = 'PRXQ')
-#axs[3].plot(ts, covXP_simul, linewidth =4, linestyle = 'dashed', color = 'blue', label = 'Ito')
-#axs[3].plot(ts, covXP_simul1, linewidth =3, linestyle = 'dashed', color = 'red', label = 'Strato')
+#axs[3].axhline(q4/2.0, linewidth =4, color = 'green', label = 'Gaussian')
 axs[3].plot(ts, Q4j, linewidth =3, color='blue')
-#axs[3].plot(ts, covXP_simuld, linewidth =3, linestyle = 'dashed', color = 'blue', label = 'Strato')
 axs[3].plot(t_i, expect((X-q1i)*(P-q2i)/2.0+(P-q2i)*(X-q1i)/2.0, rho_i), "o", color = 'b')
 axs[3].plot(t_f, expect((X-q1f)*(P-q2f)/2.0+(P-q2f)*(X-q1f)/2.0, rho_f), "X", color = 'r')
 #axs[3].plot(t_f, V2, "^" , color = 'k')
 
-axs[4].axhline(q5/2.0, linewidth =4, color = 'green', label = 'PRXQ')
+#axs[4].axhline(q5/2.0, linewidth =4, color = 'green', label = 'Gaussian')
 axs[4].plot(ts, Q5j, linewidth =3, color='blue')
-#axs[4].plot(ts, varP_simul, linewidth =4, linestyle = 'dashed', color = 'blue', label = 'Ito')
-#axs[4].plot(ts, varP_simul1, linewidth =3, linestyle = 'dashed', color = 'red', label = 'Starto')
-#axs[4].plot(ts, varP_simuld, linewidth =3, linestyle = 'dashed', color = 'blue', label = 'Starto')
 axs[4].plot(t_i, expect((P-q2i)*(P-q2i), rho_i), "o", color = 'b')
 axs[4].plot(t_f, expect((P-q2f)*(P-q2f), rho_f), "X", color = 'r')
 #axs[4].plot(t_f, V3, "^" , color = 'k')
 
-axs[5].plot(ts, rop_prxq, linewidth =4, color='green')
+#axs[5].plot(ts, rop_prxq, linewidth =4, color='green')
 axs[5].plot(ts, rop_stratj,linewidth =3, color='blue', linestyle='dashed')
-#axs[5].plot(ts, rop_stratd,linewidth =3, color='blue', linestyle='dashed')
-#axs[5].plot(ts, nbar, color='red', linestyle ='dashed', linewidth = 3)
-axs[6].plot(ts, np.zeros(len(ts)),linewidth =4, color='green')
-#axs[6].plot(ts, theta_t,linewidth =3, color='red', linestyle='dashed')
-axs[6].plot(ts, theta_tj,linewidth =3, color='blue', linestyle='dashed')
 
-axs[7].plot(ts, diff, linewidth =3, color='blue', linestyle='dashed')
+axs[6].plot(ts, np.zeros(len(ts)),linewidth =4, color='green')
+axs[6].plot(ts, theta_tj,linewidth =3, color='blue', linestyle='dashed')
+axs[6].axhline(y=np.pi/2.0, color='k', linestyle = 'dashed')
+axs[6].axhline(y=-np.pi/2.0, color='k', linestyle = 'dashed')
+
+#axs[7].plot(ts, diff, linewidth =3, color='blue', linestyle='dashed')
 
 axs[2].set_ylabel('var('+r'$X)$', fontsize = 15)
 axs[3].set_ylabel('cov('+r'$X,P)$', fontsize = 15)
 axs[4].set_ylabel('var('+r'$P)$', fontsize = 15)
 axs[5].set_ylabel('$r^\star$', fontsize = 15)
 axs[6].set_ylabel('$\\theta^\star$', fontsize = 15)
-axs[7].set_ylabel('$\Gamma(1,0)$', fontsize = 15)
-axs[7].set_xlabel('$t$', fontsize = 15)
+#axs[7].set_ylabel('$\Gamma(1,0)$', fontsize = 15)
+axs[6].set_xlabel('$t$', fontsize = 15)
 axs[2].tick_params(labelsize=15)
 axs[3].tick_params(labelsize=15)
 axs[4].tick_params(labelsize=15)
 axs[5].tick_params(labelsize=15)
 axs[6].tick_params(labelsize=15)
-axs[7].tick_params(labelsize=15)
+#axs[7].tick_params(labelsize=15)
 plt.subplots_adjust(wspace=0.1, hspace=0.1)
-#plt.savefig('/Users/t_karmakar/Library/CloudStorage/Box-Box/Research/Optimal_Path/Plots/control_l10_method35.pdf',bbox_inches='tight')
+plt.savefig('/Users/t_karmakar/Library/CloudStorage/Box-Box/Research/Optimal_Path/Plots/parametric_cooling_1.pdf',bbox_inches='tight')
 #PlotOP(Initvals, X, P, H, rho_i, rho_f, ts, theta_t, tau, 'tmpfig_control')
+
+

@@ -54,45 +54,6 @@ Functions needed to Simulate Optimal Path for a Continuously Monitored
 Quantum Harmonic Oscillator with Controlled Quadrature Measurement
 '''
 
-'''
-def construct_sigma(cdiags, cndR, cndI, nlevels):
-  i = 0
-  while (i<nlevels):
-    if (i == 0):
-      temp_sigma = cdiags[0]*basis(nlevels,0)*basis(nlevels,0).dag()
-    else:
-      temp_sigma = temp_sigma+cdiags[i]*basis(nlevels,i)*basis(nlevels,i).dag()
-    for j in range(i+1, nlevels):
-      print (i,j,nlevels*i-i*(i+1)//2+j-(i+1))
-      temp_sigma = temp_sigma+cndR[nlevels*i-i*(i+1)//2+j-(i+1)]*(basis(nlevels,i)*basis(nlevels,j).dag()+basis(nlevels,j)*basis(nlevels,i).dag())
-      temp_sigma = temp_sigma+1j*cndI[nlevels*i-i*(i+1)//2+j-(i+1)]*(basis(nlevels,i)*basis(nlevels,j).dag()-basis(nlevels,j)*basis(nlevels,i).dag())
-    i+=1
-  return temp_sigma
-
-def OPsoln(Ljump, H, rho_i, sigma_i, t_i, t_f,  tau, dt):
-  rho = rho_i
-  sigma = sigma_i-expect(sigma_i,rho)
-  t=t_i
-  while (t<t_f):
-    Omega = commutator(Ljump, sigma, kind = 'anti')
-    expL = expect(Ljump,rho)
-    delL = Ljump - expL
-    delL2 = delL*delL
-    varL = expect(delL2,rho)
-    addL = (delL2-varL)/(2*tau)
-    xi = expect(Omega,rho)/2.0
-    rho1 = rho+(-1j*commutator(H,rho)+(Ljump*rho*Ljump-Ljump*Ljump*rho/2.0-rho*Ljump*Ljump/2.0)/(4*tau)+xi*commutator(delL, rho,kind='anti')/(2*tau))*dt
-    sigma1 = sigma+(-1j*commutator(H,sigma)-(Ljump*sigma*Ljump-Ljump*Ljump*sigma/2.0-sigma*Ljump*Ljump/2.0)/(4*tau)-xi*commutator(delL, sigma,kind='anti')/(2*tau)+addL)*dt
-    rho = rho1#/rho1.tr()
-    sigma = sigma1-expect(sigma1,rho1)
-    #print (expect(sigma, rho))
-    #xs.append(expect(sigmax(),rho))
-    #ys.append(expect(sigmay(),rho))
-    #zs.append(expect(sigmaz(),rho))
-    t = t+dt
-  return rho, sigma
-'''
-
 def OPsoln_strat_SHO(X, P, H, rho_i, alr, ali, A, B, ts, theta_t,  tau, varReturn = 0):
   rho = rho_i
   #t=ts[0]
@@ -240,7 +201,8 @@ def Tr_Distance(rho_f_simul, rho_f):
   delrho = rho_f_simul-rho_f
   eps = 1e-2
   delrho2 = jnp.matmul(delrho, delrho)
-  return jnp.trace(delrho2).real#-jnp.exp(-jnp.trace(delrho2).real/eps)
+  dist = jnp.sqrt(jnp.trace(delrho2).real)
+  return 1e2*dist#-jnp.exp(-jnp.trace(delrho2).real/eps)
 
 
 def CostF_strat(Initials, X, P, H,  rho_i, rho_f, theta_t, ts, dt, tau, Id):
@@ -343,114 +305,28 @@ def PlotOP(Initials, X, P, H, rho_i, rho_f, ts, theta_t, tau, figname):
     plt.subplots_adjust(wspace=0.1, hspace=0.1)
     #plt.savefig('/Users/t_karmakar/Library/CloudStorage/Box-Box/Research/Optimal_Path/Plots/'+figname+'.pdf',bbox_inches='tight')
 
-
-
-def OPsoln_control_l10(X, P, H, rho_i, alr, ali, A, B, Cv, k0r, k0i, Dvp, Dvm,  ts,   tau, varReturn = 0):
-  rho = rho_i
-  #t=ts[0]
-  t_f = ts[-1]
-  dt = ts[1]-ts[0]
-  I_t = 0
-  I_k_t=0
-  I_Gp_t=0
-  I_G_t=0
-  expLs = np.zeros(len(ts))
-  expMs = np.zeros(len(ts))
-  varLs = np.zeros(len(ts))
-  varMs = np.zeros(len(ts))
-  covLMs = np.zeros(len(ts))
-  rop_strat = np.zeros(len(ts))
-  theta_t = np.zeros(len(ts))
-  nbar = np.zeros(len(ts))
-  theta = 0
-  i=0
-  phi = 0
-  #csph, snph = np.cos(phi), np.sin(phi)
-  csth, snth = np.cos(theta), np.sin(theta)
-  Ljump = csth*X+snth*P
-  Mjump = -snth*X+csth*P
-  Mjump2 = Mjump*Mjump
-  expL = expect(Ljump,rho).real
-  expM = expect(Mjump,rho).real
-  varL = expect(Ljump*Ljump,rho).real-expL**2
-  varM = expect(Mjump2,rho).real-expM**2
-  covLM = (expect(Ljump*Mjump+Mjump*Ljump,rho).real-2*expL*expM)/2.0
-  while (i<len(ts)):
-    #print (ts[i])
-    t = ts[i]
-    #print (theta)
-    theta_t[i]=theta
-    #theta = theta_t[i]
-    phi = theta + t
-    #print (t)
-    #csth, snth = np.cos(theta), np.sin(theta)
-    csph, snph = np.cos(phi), np.sin(phi)
-    #cs2ph, sn2ph = np.cos(2*phi), np.sin(2*phi)
-    #Ljump = csth*X+snth*P
-    
-    #Ljump2 = Ljump*Ljump
-    #Ljump2_a = (csph**2)*X*X+(snph**2)*P*P+csph*snph*(X*P+P*X)
-    #Mjump = -snth*X+csth*P
-    #Mjump = -snph*X+csph*P
-    expLs[i] = expL
-    expMs[i] = expM
-    #delL = Ljump - expL
-    #delVjump = Ljump2-expect(Ljump2, rho).real
-    #delM = Mjump-expM
-    #Mjump2 = Mjump*Mjump
-    #delL2 = delL*delL
-    #varL1 = expect(Ljump2_a,rho).real-expL**2
-    if (varReturn ==1):
-      varLs[i] = varL
-      varMs[i] = varM
-      covLMs[i] = covLM
-      nbar[i] = 0
-    
-    ht = np.exp(-1j*phi)*(alr+1j*ali+1j*t*(A+1j*B)/(8*tau))+np.exp(-1j*phi)*I_t
-    r =  ht.real
-    v = ht.imag
-    w = A*csph+B*snph
-    z = -A*snph+B*csph
-    kappa = np.exp(1j*2*phi)*(k0r+1j*k0i+I_k_t)
-    kappaLM = kappa.imag
-    kappaLL=Cv-kappa.real
-    Gp = Dvp+I_Gp_t
-    G = np.exp(1j*2*phi)*(Dvm+1j*alr*ali+I_G_t)
-    Gr = G.real
-    GLM=G.imag
-    GLL=Gp-Gr
-    rop_strat[i]=r
-    #print (GLM-r*v)
-    dtheta = ((2*r*w-kappaLL)/((4*r**2-4*v**2+8*Gr)*tau)-1)
-    dphi = dtheta+1
-    expL1 = expL+dt*(dphi*expM+(r-expL)*2*varL/(2*tau))
-    expM1 = expM+dt*(-dphi*expL+(r-expL)*2*covLM/(2*tau))
-    varL1 = varL+dt*(2*dphi*covLM-varL/tau)
-    covLM1 = covLM+dt*(dphi*(varM-varL)-varL*covLM/tau)
-    varM1 =  varM+dt*(-2*dphi*covLM+(1-4*covLM**2)/(4*tau))    
-    I_t+= 1j*(A-1j*B)*(np.exp(1j*2*phi))*dt/(8*tau)
-    I_k_t+=-dt*1j*np.exp(-1j*2*phi)*(GLL-r**2)/tau
-    I_Gp_t+=dt*(kappaLM-r*z)/(4*tau)
-    I_G_t+=dt*(1j*(Cv-kappa)*np.exp(-1j*2*phi)-(B+1j*A)*r*np.exp(-1j*phi))/(4*tau)
-    expL, expM, varL, covLM, varM = expL1, expM1, varL1, covLM1, varM1
-    #print (dtheta)
-    theta+=dt*dtheta
-    #t = t+dt
-    i+=1
-    #print (expM)
-  if (varReturn == 1):
-    return rho, expLs, expMs, varLs, covLMs, varMs,rop_strat,nbar, theta_t
-  else:
-    return rho, expLs, expMs
+def G_k_updates(G10, G01, k10, k01, G20, G11, G02, k20, k11, k02, csth, snth, r, dt, tau, l1):
+    G101 = G10+dt*(G01-snth*(csth*k10+snth*k01)/(4*tau))
+    G011 = G01+dt*(-(1+2*l1)*G10+csth*(csth*k10+snth*k01)/(4*tau))
+    k101 = k10+dt*k01
+    k011 = k01-dt*(1+2*l1)*k10
+    G201 = G20+dt*(2*G11+snth*(r*k10-csth*k20-snth*k11)/(2*tau))
+    G111 = G11+dt*(G02-(1+2*l1)*G20+(r*(snth*k01-csth*k10)+(csth**2*k20-snth**2*k02))/(4*tau))
+    G021 = G02+dt*(-2*(1+2*l1)*G11+csth*(snth*k02+csth*k11-r*k01)/(2*tau))
+    k201 = k20+dt*(2*k11+2*snth*(csth*G20+snth*G11-r*G10)/tau)
+    k111 = k11+dt*(-(1+2*l1)*k20+k02+(r*(csth*G10-snth*G01)-csth**2*G20+snth**2*G02)/tau)
+    k021 = k02+dt*(-2*(1+2*l1)*k11+2*csth*(-snth*G02-csth*G11+r*G01)/tau)  
+    return G101, G011, k101, k011, G201, G111, G021, k201, k111, k021
 
 
 def rho_update_control_l10(i, Input_Initials): #Optimal control integration with \lambda_1=0
-  Initials, X, P, H, rho, G10, G01, k10, k01, G20, G11, G02, k20, k11, k02, Idth, ts, tau, dt, j, Id = Input_Initials
+  X, P, H, rho, l1max, G10, G01, k10, k01, G20, G11, G02, k20, k11, k02, Idth, ts, tau, dt, j, Id = Input_Initials
   AGamma = (G10**2-G01**2-G20+G02)/2.0
   BGamma = G10*G01-G11
   theta = jnp.arctan2(BGamma, AGamma)/2.0
   csth, snth = jnp.cos(theta), jnp.sin(theta)
   r = csth*G10+snth*G01
+  l1 = -l1max*jnp.sign(k20)
   #I_t = I_tR + 1j*I_tI
   #print (tau)
   t = ts[j]
@@ -483,6 +359,8 @@ def rho_update_control_l10(i, Input_Initials): #Optimal control integration with
   #wz = jnp.matmul(wzmat, Initials)*e_jphi
   #w = wz.real
   #z = wz.imag
+  G101, G011, k101, k011, G201, G111, G021, k201, k111, k021 = G_k_updates(G10, G01, k10, k01, G20, G11, G02, k20, k11, k02, csth, snth, r, dt, tau, l1)
+  '''
   G101 = G10+dt*(G01-snth*(csth*k10+snth*k01)/(4*tau))
   G011 = G01+dt*(-G10+csth*(csth*k10+snth*k01)/(4*tau))
   k101 = k10+dt*k01
@@ -493,18 +371,17 @@ def rho_update_control_l10(i, Input_Initials): #Optimal control integration with
   k201 = k20+dt*(2*k11+2*snth*(csth*G20+snth*G11-r*G10)/tau)
   k111 = k11+dt*(-k20+k02+(r*(csth*G10-snth*G01)-csth**2*G20+snth**2*G02)/tau)
   k021 = k02+dt*(-2*k11+2*csth*(-snth*G02-csth*G11+r*G01)/tau)  
-
+  '''
   
   H_update = -1j*(jnp.matmul(H, rho)-jnp.matmul(rho, H))
   Lind_update = (-jnp.matmul(delV, rho)-jnp.matmul(rho, delV))/(4*tau)
   read_update = r*(jnp.matmul(delL, rho)+ jnp.matmul(rho, delL))*(1.0/(2*tau))
   rho_update =H_update+Lind_update+read_update
   rho1 = rho + rho_update*dt
-  Idth1 = Idth+dt*(r**2-2*r*expL+expV)/(2*tau)
-  return (Initials, X, P, H, rho1, G101, G011, k101, k011, G201, G111, G021, k201, k111, k021, Idth1, ts, tau, dt, j+1, Id)
+  Idth1 = Idth+1e0*dt*(r**2-2*r*expL+expV)/(2*tau)
+  return (X, P, H, rho1, l1max, G101, G011, k101, k011, G201, G111, G021, k201, k111, k021, Idth1, ts, tau, dt, j+1, Id)
 
-
-def OPsoln_control_l10_JAX(Initials, X, P, H, rho_i, ts, dt,  tau, Idmat,  Id):
+def OPsoln_control_l10_JAX(Initials, X, P, H, rho_i, l1max, ts, dt,  tau, Idmat,  Id):
   #I_tR = jnp.array([0.0])
   G10 = jnp.matmul(Idmat[0], Initials)
   G01 = jnp.matmul(Idmat[1], Initials)
@@ -524,39 +401,136 @@ def OPsoln_control_l10_JAX(Initials, X, P, H, rho_i, ts, dt,  tau, Idmat,  Id):
   #theta = jnp.array(0.0)
   k1=0
   Idth = 0.0
-  Initials, X, P, H,  rho, G10, G01, k10, k01, G20, G11, G02, k20, k11, k02, Idth, ts, tau, dt, k1, Id = jax.lax.fori_loop(0, len(ts)-1, rho_update_control_l10,(Initials, X, P, H,  rho, G10, G01, k10, k01, G20, G11, G02, k20, k11, k02, Idth,  ts, tau, dt, k1, Id))
+  X, P, H,  rho, l1max, G10, G01, k10, k01, G20, G11, G02, k20, k11, k02, Idth, ts, tau, dt, k1, Id = jax.lax.fori_loop(0, len(ts)-1, rho_update_control_l10,(X, P, H,  rho, l1max, G10, G01, k10, k01, G20, G11, G02, k20, k11, k02, Idth,  ts, tau, dt, k1, Id))
   #rho_update(Initials, X, P, H, X2, P2, XP, PX, rho, I_tR, I_tI, i, theta_t, ts, tau, dt)
   return rho, Idth
 
-def CostF_control_l10(Initials, X, P, H,  rho_i, rho_f, theta_t, ts, dt, tau, Idmat, Id):
-  rho_f_simul, Idth = OPsoln_control_l10_JAX(Initials, X, P, H, rho_i, ts, dt, tau, Idmat, Id)
-  #print (Idth)
-  return 1e2*Tr_Distance(rho_f_simul, rho_f)
+def rho_sigma_update_control_l10(i, Input_Initials): #Optimal control integration with \lambda_1=0
+  X, P, X2, P2, CXP, H, rho, sigma,  Idth, ts, tau, dt, j, Id = Input_Initials
+  rhosig = jnp.matmul(rho,sigma)
+  sigrho = jnp.matmul(sigma, rho)
+  Omega = (rhosig+sigrho)/2.0
+  #Lambda = rhosig-sigrho
+  G10 = jnp.trace(jnp.matmul(X,Omega)).real
+  G01 = jnp.trace(jnp.matmul(P,Omega)).real
+  G20 = jnp.trace(jnp.matmul(X2, Omega)).real
+  G02 = jnp.trace(jnp.matmul(P2, Omega)).real
+  G11 = jnp.trace(jnp.matmul(CXP, Omega)).real
+  AGamma = (G10**2-G01**2-G20+G02)/2.0
+  BGamma = G10*G01-G11
+  theta = jnp.arctan2(BGamma, AGamma)/2.0
+  csth, snth = jnp.cos(theta), jnp.sin(theta)
+  r = csth*G10+snth*G01
+  #I_t = I_tR + 1j*I_tI
+  #print (tau)
+  t = ts[j]
 
-def CostF_control2_l10(Initials, X, P, H,  rho_i, rho_f, theta_t, ts, dt, tau, Idmat, Id):
-  rho_f_simul, Idth = OPsoln_control_l10_JAX(Initials, X, P, H, rho_i, ts, dt, tau, Idmat, Id)
+  Ljump = csth*X+snth*P
+  Ljump2 = jnp.matmul(Ljump, Ljump)#X2*csth**2 + P2*snth**2 + (XP + PX)*csth*snth
+  #Mjump = -snth*X+csth*P
+  expX = jnp.trace(jnp.matmul(X, rho)).real
+  expP = jnp.trace(jnp.matmul(P, rho)).real
+  expV = jnp.trace(jnp.matmul(Ljump2, rho)).real
+  expL = csth*expX + snth*expP
+  delL = Ljump - expL*Id
+  delV = Ljump2-expV*Id
+  expsigma = jnp.trace(jnp.matmul(sigma, rho))
+  
+  H_update = -1j*(jnp.matmul(H, rho)-jnp.matmul(rho, H))
+  Lind_update = (-jnp.matmul(delV, rho)-jnp.matmul(rho, delV))/(4*tau)
+  read_update = r*(jnp.matmul(delL, rho)+ jnp.matmul(rho, delL))*(1.0/(2*tau))
+  rho_update =H_update+Lind_update+read_update
+  H_sigma_update = -1j*(jnp.matmul(H, sigma)-jnp.matmul(sigma, H))
+  Lind_sigma_update = (jnp.matmul(delV, sigma)+jnp.matmul(sigma, delV)-2*(expsigma-1)*Ljump2)/(4*tau)
+  read_sigma_update = -r*(jnp.matmul(delL, sigma)+ jnp.matmul(sigma, delL)-2*(expsigma-1)*Ljump)*(1.0/(2*tau))
+  rho_update = H_update+Lind_update+read_update
+  #print (jnp.trace(rho_update))
+  #rho_update1 = rho_update-jnp.trace(rho_update)*rho
+  sigma_update = H_sigma_update+Lind_sigma_update+read_sigma_update
+  rho1 = rho + rho_update*dt
+  sigma1 = sigma+sigma_update*dt
+  expsigma = jnp.trace(jnp.matmul(sigma1, rho1))
+  sigma1 = sigma1 + (1-expsigma)*Id
+  
+  Idth1 = Idth+1e1*dt*(r**2-2*r*expL+expV)/(2*tau)
+  return (X, P,  X2, P2, CXP, H, rho1, sigma1, Idth1, ts, tau, dt, j+1, Id)
+
+def OPsoln_sigma_control_l10_JAX(sigma0, X, P, X2, P2, CXP, H, rho_i, ts, dt,  tau, Idmat,  Id):
+  #I_tR = jnp.array([0.0])
+  
+  #print (GLL)
+  #GMM = jnp.matmul(jnp.array([0,0,0,0,0,0,0,1,1.0]),Initials)+jnp.array([0])
+  rho = rho_i
+  k1=0
+  Idth = 0.0
+  
+  X, P, X2, P2, CXP, H,  rho, sigma, Idth, ts, tau, dt, k1, Id = jax.lax.fori_loop(0, len(ts)-1, rho_sigma_update_control_l10,(X, P, X2, P2, CXP, H,  rho, sigma0, Idth,  ts, tau, dt, k1, Id))
+  #rho_update(Initials, X, P, H, X2, P2, XP, PX, rho, I_tR, I_tI, i, theta_t, ts, tau, dt)
+  return rho, Idth
+
+@jit
+def CostF_control_l10(Initials, X, P, H,  rho_i, rho_f, l1max, ts, dt, tau, Idmat, Id):
+  rho_f_simul, Idth = OPsoln_control_l10_JAX(Initials, X, P, H, rho_i, l1max, ts, dt, tau, Idmat, Id)
+  #print (Idth)
+  return Tr_Distance(rho_f_simul, rho_f)
+
+@jit
+def CostF_control2_l10(Initials, X, P, H,  rho_i, rho_f, l1max, ts, dt, tau, Idmat, Id):
+  rho_f_simul, Idth = OPsoln_control_l10_JAX(Initials, X, P, H, rho_i, l1max, ts, dt, tau, Idmat, Id)
   #print (Idth)
   return Idth
 
+@jit
+def CostF_control_l101(Initials, X, P, H,  rho_i, rho_f, l1max, ts, dt, tau, Idmat, Id):
+  rho_f_simul, Idth = OPsoln_control_l10_JAX(Initials, X, P, H, rho_i, l1max, ts, dt, tau, Idmat, Id)
+  return Tr_Distance(rho_f_simul, rho_f), Idth
 
-def CostF_control_l101(Initials, X, P, H,  rho_i, rho_f, theta_t, ts, dt, tau, Idmat, Id):
-  rho_f_simul, Idth = OPsoln_control_l10_JAX(Initials, X, P, H, rho_i,  ts, dt, tau, Idmat, Id)
-  return 1e2*Tr_Distance(rho_f_simul, rho_f), Idth
+def CostF_sigma_control_l10(sigma0, X, P, X2, P2, CXP, H,  rho_i, rho_f, theta_t, ts, dt, tau, Idmat, Id):
+  rho_f_simul, Idth = OPsoln_sigma_control_l10_JAX(sigma0, X, P, X2, P2, CXP, H, rho_i, ts, dt, tau, Idmat, Id)
+  #print (Idth)
+  return Tr_Distance(rho_f_simul, rho_f)
+
+def CostF_sigma_control2_l10(sigma0, X, P, X2, P2, CXP, H,  rho_i, rho_f, theta_t, ts, dt, tau, Idmat, Id):
+  rho_f_simul, Idth = OPsoln_sigma_control_l10_JAX(sigma0, X, P, X2, P2, CXP, H, rho_i, ts, dt, tau, Idmat, Id)
+  #print (Idth)
+  return Idth
+
+def CostF_sigma_control_l101(sigma0, X, P, X2, P2, CXP,  H,  rho_i, rho_f, theta_t, ts, dt, tau, Idmat, Id):
+  rho_f_simul, Idth = OPsoln_sigma_control_l10_JAX(sigma0, X, P, X2, P2, CXP, H, rho_i,  ts, dt, tau, Idmat, Id)
+  return Tr_Distance(rho_f_simul, rho_f), Idth
 
 @jit
 def update_control_l10(Initials, X, P, H, rho_i, rho_f, theta_t, ts, dt, tau, Idmat, Id,  step_size):
     grads=grad(CostF_control_l10)(Initials, X, P, H, rho_i, rho_f, theta_t, ts, dt, tau, Idmat, Id)
+    #randlist = np.ones(10)
+    #randlist[:5] = 0
+    #np.random.shuffle(randlist)
+    #grads = grads*randlist
     return jnp.array([w - step_size * dw
           for w, dw in zip(Initials, grads)])
 
 @jit
 def update_control2_l10(Initials, X, P, H, rho_i, rho_f, theta_t, ts, dt, tau, Idmat, Id,  step_size):
     grads=grad(CostF_control2_l10)(Initials, X, P, H, rho_i, rho_f, theta_t, ts, dt, tau, Idmat, Id)
+    
     return jnp.array([w - step_size * dw
           for w, dw in zip(Initials, grads)])
 
+@jit
+def update_sigma_control_l10(sigma0, X, P, X2, P2, CXP, H, rho_i, rho_f, theta_t, ts, dt, tau, Idmat, Id,  step_size):
+    grads=grad(CostF_sigma_control_l10)(sigma0, X, P, X2, P2, CXP, H, rho_i, rho_f, theta_t, ts, dt, tau, Idmat, Id)
+    #print (jnp.shape(grads))
+    return jnp.array([w - step_size * dw
+          for w, dw in zip(sigma0, grads)])
 
-def OPintegrate_strat(Initials, X, P, H, rho_i, ts, dt,  tau, Idmat, Id):
+@jit
+def update_sigma_control2_l10(sigma0, X, P, X2, P2, CXP, H, rho_i, rho_f, theta_t, ts, dt, tau, Idmat, Id,  step_size):
+    grads=grad(CostF_sigma_control2_l10)(sigma0, X, P, X2, P2, CXP, H, rho_i, rho_f, theta_t, ts, dt, tau, Idmat, Id)
+    return jnp.array([w - step_size * dw
+          for w, dw in zip(sigma0, grads)])
+
+
+def OPintegrate_strat(Initials, X, P, H, rho_i, l1max, ts, dt,  tau, Idmat, Id):
   #I_tR = jnp.array([0.0])
   G10 = np.matmul(Idmat[0], Initials)
   G01 = np.matmul(Idmat[1], Initials)
@@ -577,6 +551,7 @@ def OPintegrate_strat(Initials, X, P, H, rho_i, ts, dt,  tau, Idmat, Id):
   Q4 = np.zeros(len(ts))
   Q5 = np.zeros(len(ts))
   theta_t = np.zeros(len(ts))
+  l1_t = np.zeros(len(ts))
   diff = np.zeros(len(ts))
   readout = np.zeros(len(ts))
   
@@ -585,6 +560,7 @@ def OPintegrate_strat(Initials, X, P, H, rho_i, ts, dt,  tau, Idmat, Id):
       #Initials, X, P, H, rho, I_t, I_k_t, I_Gp_t, I_G_t,   phi,  ts, tau, dt, j, Id, Q1, Q2, Q3, Q4, Q5 = Input_Initials
       #I_t = I_tR + 1j*I_tI
       #print (tau)
+      
       diff[j]=G10
       t = ts[j]
       AGamma = (G10**2-G01**2-G20+G02)/2.0
@@ -592,6 +568,8 @@ def OPintegrate_strat(Initials, X, P, H, rho_i, ts, dt,  tau, Idmat, Id):
       theta = np.arctan2(BGamma, AGamma)/2.0
       theta_t[j] = theta
       csth, snth = np.cos(theta), np.sin(theta)
+      l1 = -l1max*np.sign(k20)
+      l1_t[j] = l1
       #e_jphi = np.exp(-1j*phi)
       #delh_t_Mat = e_jphi*np.array([1,1j,1j*t/(8.0*tau), -t/(8.0*tau),0,0,0,0,0])
       #ht = np.matmul(delh_t_Mat, Initials) + e_jphi*I_t
@@ -624,8 +602,9 @@ def OPintegrate_strat(Initials, X, P, H, rho_i, ts, dt,  tau, Idmat, Id):
       drho = H_update+Lind_update+read_update
       #print (Lind_update)
       #print (np.trace(drho).real)
-      rho+=drho*dt
-      
+      rho+=(drho)*dt
+      G10, G01, k10, k01, G20, G11, G02, k20, k11, k02 = G_k_updates(G10, G01, k10, k01, G20, G11, G02, k20, k11, k02, csth, snth, r, dt, tau, l1)
+      '''
       G101 = G10+dt*(G01-snth*(csth*k10+snth*k01)/(4*tau))
       G011 = G01+dt*(-G10+csth*(csth*k10+snth*k01)/(4*tau))
       k101 = k10+dt*k01
@@ -637,6 +616,85 @@ def OPintegrate_strat(Initials, X, P, H, rho_i, ts, dt,  tau, Idmat, Id):
       k111 = k11+dt*(-k20+k02+(r*(csth*G10-snth*G01)-csth**2*G20+snth**2*G02)/tau)
       k021 = k02+dt*(-2*k11+2*csth*(-snth*G02-csth*G11+r*G01)/tau)  
       G10, G01, k10, k01, G20, G11, G02, k20, k11, k02 = G101, G011, k101, k011, G201, G111, G021, k201, k111, k021
+      '''
+      j+=1
+  #Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5 = jax.lax.fori_loop(0, len(ts), rho_integrate_JAX,(Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5))
+  return Q1,Q2,Q3,Q4,Q5, theta_t, l1_t, rho, readout, diff
+
+def OPintegrate_sigma_strat(sigma0, X, P, X2, P2, CXP, H, rho_i, ts, dt,  tau, Idmat, Id):
+  rho = rho_i
+  sigma = sigma0
+  j=0
+  Q1 = np.zeros(len(ts))
+  Q2 = np.zeros(len(ts))
+  Q3 = np.zeros(len(ts))
+  Q4 = np.zeros(len(ts))
+  Q5 = np.zeros(len(ts))
+  theta_t = np.zeros(len(ts))
+  diff = np.zeros(len(ts))
+  readout = np.zeros(len(ts))
+  
+  while (j<len(ts)):
+      #print (j,r)
+      #Initials, X, P, H, rho, I_t, I_k_t, I_Gp_t, I_G_t,   phi,  ts, tau, dt, j, Id, Q1, Q2, Q3, Q4, Q5 = Input_Initials
+      #I_t = I_tR + 1j*I_tI
+      #print (tau)
+      rhosig = np.matmul(rho,sigma)
+      sigrho = np.matmul(sigma, rho)
+      Omega = (rhosig+sigrho)/2.0
+      #Lambda = rhosig-sigrho
+      G10 = np.trace(np.matmul(X,Omega)).real
+      G01 = np.trace(np.matmul(P,Omega)).real
+      G20 = np.trace(np.matmul(X2, Omega)).real
+      G02 = np.trace(np.matmul(P2, Omega)).real
+      G11 = np.trace(np.matmul(CXP, Omega)).real
+      AGamma = (G10**2-G01**2-G20+G02)/2.0
+      BGamma = G10*G01-G11
+      theta = jnp.arctan2(BGamma, AGamma)/2.0
+      csth, snth = jnp.cos(theta), jnp.sin(theta)
+      diff[j]=G10
+      t = ts[j]
+      theta_t[j] = theta
+      #e_jphi = np.exp(-1j*phi)
+      #delh_t_Mat = e_jphi*np.array([1,1j,1j*t/(8.0*tau), -t/(8.0*tau),0,0,0,0,0])
+      #ht = np.matmul(delh_t_Mat, Initials) + e_jphi*I_t
+      r = csth*G10+snth*G01
+      readout[j] = r
+
+      Ljump = csth*X+snth*P
+      Xjump2 = np.matmul(X, X)#X2*csth**2 + P2*snth**2 + (XP + PX)*csth*snth
+      Ljump2 = np.matmul(Ljump, Ljump)
+      #Mjump = -snth*X+csth*P
+      Pjump2 = np.matmul(P,P)
+      expX = np.trace(np.matmul(X, rho)).real
+      expP = np.trace(np.matmul(P, rho)).real
+      expV = np.trace(np.matmul(Ljump2, rho)).real
+      expL = csth*expX + snth*expP
+      #exphi = 
+      #expM = -snth*expX + csth*expP
+      #print (expL)
+      Q1[j]=expX
+      Q2[j]=expP
+      delL = Ljump - expL*Id
+      #print (delL)
+      Q3[j] = np.trace(np.matmul(Xjump2,rho)).real-expX**2
+      Q5[j] = np.trace(np.matmul(Pjump2,rho)).real-expP**2
+      Q4[j] = np.trace(np.matmul(np.matmul(X, P)+np.matmul(P,X),rho)).real/2.0-expX*expP
+      delV = Ljump2-expV*Id
+      H_update = -1j*(np.matmul(H, rho)-np.matmul(rho, H))
+      Lind_update = (-np.matmul(delV, rho)-np.matmul(rho, delV))/(4*tau)
+      read_update = r*(np.matmul(delL, rho)+ np.matmul(rho, delL))*(1.0/(2*tau))
+      H_sigma_update = -1j*(np.matmul(H, sigma)-np.matmul(sigma, H))
+      Lind_sigma_update = (np.matmul(delV, sigma)+np.matmul(sigma, delV))/(4*tau)
+      read_sigma_update = -r*(np.matmul(delL, sigma)+ np.matmul(sigma, delL))*(1.0/(2*tau))
+      drho = H_update+Lind_update+read_update
+      dsigma = H_sigma_update+Lind_sigma_update+read_sigma_update
+      #print (Lind_update)
+      #print (np.trace(drho).real)
+      rho+=drho*dt
+      sigma+=dsigma*dt
+      expsigma = np.trace(np.matmul(sigma, rho))
+      sigma = sigma + (1-expsigma)*Id
       j+=1
   #Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5 = jax.lax.fori_loop(0, len(ts), rho_integrate_JAX,(Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5))
   return Q1,Q2,Q3,Q4,Q5, theta_t, rho, readout, diff

@@ -75,7 +75,7 @@ rho_i = squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
 rho_f = squeeze(nlevels,  xiR+1j*xiI)*coherent(nlevels, fin_alr+1j*fin_ali)
 rho_f_int = squeeze(nlevels,  xiR*np.cos(2*t_f)-xiI*np.sin(2*t_f)+1j*(xiI*np.cos(2*t_f)+xiR*np.sin(2*t_f)))*coherent(nlevels, fin_alr*np.cos(t_f)-fin_ali*np.sin(t_f)+1j*(fin_ali*np.cos(t_f)+fin_alr*np.sin(t_f)))
 
-nsteps = 2500
+nsteps = 2000
 X = (a+a.dag())/np.sqrt(2)
 P = (a-a.dag())/(np.sqrt(2)*1j)
 H = (X*X+P*P)/2.0
@@ -103,9 +103,9 @@ Q5i = 2*(expect(P*P,rho_i)-Q2i**2)
 Q4i = (expect(P*X+X*P,rho_i)-2*Q2i*Q1i)
 
 lrate = 1e-2
-q3, q4, q5, alr, ali, A, B, q1t, q2t,rop_prxq = OP_PRXQ_Params(X, P, rho_i, rho_f, ts, tau)
+#q3, q4, q5, alr, ali, A, B, q1t, q2t,rop_prxq = OP_PRXQ_Params(X, P, rho_i, rho_f, ts, tau)
 
-Ncos = 15
+Ncos = 7
 #NC = 2*Ncos
 inits1 = 5*(np.random.rand(10)-0.5)
 inits2 = 5*(np.random.rand(2*Ncos)-0.5)
@@ -119,7 +119,7 @@ Initials = jnp.array(inits)
 #inits[0]=expect(X,rho_i).real
 #inits = np.array([ 2.03119478, -0.64861863,  3.06237402,  3.65953078,  3.56056756,
        #-0.66798523, -3.0849589 , -2.22235786, -1.85641707])
-alr, ali, A, B, Cv, k0r, k0i, Dvp, Dvm, GLM0 = inits[0], inits[1], inits[2], inits[3], inits[4], inits[5], inits[6], inits[7], inits[8], inits[9]
+#alr, ali, A, B, Cv, k0r, k0i, Dvp, Dvm, GLM0 = inits[0], inits[1], inits[2], inits[3], inits[4], inits[5], inits[6], inits[7], inits[8], inits[9]
 #Initials = jnp.array(inits)
 
 
@@ -134,21 +134,20 @@ q1i = expect(X,rho_i)
 q1f = expect(X,rho_f)
 q2i = expect(P,rho_i)
 q2f = expect(P,rho_f)
-MMat1, MMat2 = Multiply_Mat(tau, Ncos)
+MMat1 = Multiply_Mat(10, Ncos)
 for n in range(nsteps):
   stime = time.time()
-  print (CostFt_control_l10_2input(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, Fmat, ts, dt, tau, Ncos, MMat1, MMat2, jnpId))
-  Initials = update_control1_l10_2input(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, Fmat, ts, dt, tau, Ncos, MMat1, MMat2, jnpId, lrate)
-  Initials = update_control2_l10_2input(Initials,  jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, Fmat, ts, dt, tau, Ncos, MMat1, MMat2, jnpId, lrate)
-  #print (Initials)
+  print (CostFt_control_l10_2input(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, Fmat, ts, dt, tau, Ncos, MMat1, jnpId))
+  Initials = update_control1_l10_2input(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, Fmat, ts, dt, tau, Ncos, MMat1, jnpId, lrate)
+  Initials = update_control2_l10_2input(Initials,  jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, Fmat, ts, dt, tau, Ncos, MMat1, jnpId, lrate)
   print (n, time.time()-stime)
   
 Initvals = np.array(Initials)
-theta_t = 0.1*jnp.tanh(10*jnp.matmul(Fmat, Initials))
+theta_t = (np.pi/2.0)*jnp.tanh(2*jnp.matmul(Fmat, Initials)/np.pi)
 
 
 q3, q4, q5, alr, ali, A, B, q1t, q2t, rop_prxq = OP_PRXQ_Params(X, P, rho_i, rho_f, ts, tau)
-Q1j, Q2j, Q3j, Q4j, Q5j,  rho_f_simul2, rop, diff, Hs = OPintegrate_strat_2inputs(Initials,  X.full(), P.full(), H.full(), rho_i.full(), theta_t, ts, dt,  tau, Ncos, MMat1, MMat2, np.identity(nlevels))
+Q1j, Q2j, Q3j, Q4j, Q5j,  rho_f_simul2, rop, diff, Hs = OPintegrate_strat_2inputs(Initials,  X.full(), P.full(), H.full(), rho_i.full(), theta_t, ts, dt,  tau, Ncos, MMat1, np.identity(nlevels))
 
 
   
@@ -219,7 +218,7 @@ axs[3].set_ylabel('cov('+r'$X,P)$', fontsize = 15)
 axs[4].set_ylabel('var('+r'$P)$', fontsize = 15)
 axs[5].set_ylabel('$r^\star$', fontsize = 15)
 axs[6].set_ylabel('$\\theta^\star$', fontsize = 15)
-axs[7].set_ylabel('$\\tilde{\Gamma}_{\\textrm{LM}}-\\frac{1}{4}w_\\theta z_\\theta$', fontsize = 15)
+axs[7].set_ylabel('$\\theta^\star(t)-\\theta(t)$', fontsize = 15)
 axs[7].set_xlabel('$t$', fontsize = 15)
 axs[2].tick_params(labelsize=15)
 axs[3].tick_params(labelsize=15)

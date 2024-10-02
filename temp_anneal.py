@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jul 10 10:40:54 2024
+Created on Tue Aug 13 11:46:04 2024
 
 @author: t_karmakar
 """
+
 
 import os,sys
 import time
@@ -46,10 +47,10 @@ nlevels = 25
 #rho_f = coherent(nlevels, 0.5)
 a = destroy(nlevels)
 t_i = 0
-t_f = 3
-ts = np.linspace(t_i, t_f, 600)
+t_f = 5.0
+ts = np.linspace(t_i, t_f, int(t_f/0.01))
 dt = ts[1]-ts[0]
-tau = 5.0
+tau = 2.5
 q4f = np.sqrt(1+4*tau*tau)-2*tau
 q3f = np.sqrt(4*tau*q4f)
 q5f = q3f*(1+q4f/(2*tau))
@@ -62,15 +63,15 @@ xiR = r_sq*(q5f-q3f)/(2*snh2r)
 xiI = r_sq*(-q4f)/snh2r
 in_alr = .5
 in_ali = -.7
-fin_alr = in_alr*np.cos(t_f)+in_ali*np.sin(t_f)
-fin_ali = in_ali*np.cos(t_f)-in_alr*np.sin(t_f)
+fin_alr = -0.1#in_alr*np.cos(t_f)+in_ali*np.sin(t_f)
+fin_ali = 0.5#in_ali*np.cos(t_f)-in_alr*np.sin(t_f)
 
 rho_i = squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
 #rho_f = basis(nlevels,4)
 rho_f = squeeze(nlevels,  xiR+1j*xiI)*coherent(nlevels, fin_alr+1j*fin_ali)
 rho_f_int = squeeze(nlevels,  xiR*np.cos(2*t_f)-xiI*np.sin(2*t_f)+1j*(xiI*np.cos(2*t_f)+xiR*np.sin(2*t_f)))*coherent(nlevels, fin_alr*np.cos(t_f)-fin_ali*np.sin(t_f)+1j*(fin_ali*np.cos(t_f)+fin_alr*np.sin(t_f)))
 
-nsteps = 2000
+
 X = (a+a.dag())/np.sqrt(2)
 P = (a-a.dag())/(np.sqrt(2)*1j)
 H = (X*X+P*P)/2.0
@@ -109,9 +110,11 @@ def make_sigma0(sigma0r, sigma0i, rho_i, Id):
     #expsigma = jnp.trace(jnp.matmul(sigma0,rho_i))
     #sigma0 = sigma0+(1-expsigma)*Id
     return normalize_sigma0(sigma0, rho_i, Id)
-sigma0r = 15*jnp.array(np.random.rand(nlevels, nlevels)-0.5)
+
+scl=1e-9
+sigma0r = scl*jnp.array(np.random.rand(nlevels, nlevels)-0.5)
 #sigma0r = sigma0r+jnp.transpose(sigma0r)
-sigma0i = 15*jnp.array(np.random.rand(nlevels, nlevels)-0.5)
+sigma0i = scl*jnp.array(np.random.rand(nlevels, nlevels)-0.5)
 #sigma0i = sigma0i-jnp.transpose(sigma0i)
 
 #inits=np.array([-0.20454815,  3.12661525, -3.10051494,  2.90454994,  0.66154927,
@@ -142,25 +145,42 @@ sigma0 = make_sigma0(sigma0r, sigma0i, jnp_rho_i, jnpId)
 
 
 #grads=grad(CostF_sigma_control_l10)(sigma0, jnpX, jnpP, jnpX2, jnpP2, jnpCXP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId)
+cost_b, J_b = CostF_sigma_control_l101(sigma0, jnpX, jnpP, jnpX2, jnpP2, jnpCXP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId)
+sigma0_c = sigma0
+sigma0r_c = sigma0r
+sigma0i_c = sigma0i
+cost_c = cost_b
 
-
-for n in range(nsteps):
+tempf = 0.005
+tempi = 200.0
+temp = tempi
+step_size = 1e-4
+nsteps = 10000
+n=0
+while temp>tempf and (n<nsteps):
   stime = time.time()
-  lrate = lrate0#/(1+n)
-  print (CostF_sigma_control_l101(sigma0, jnpX, jnpP, jnpX2, jnpP2, jnpCXP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId))
-  sigma0 = update_sigma_control_l10(sigma0, jnpX, jnpP, jnpX2, jnpP2, jnpCXP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId, lrate)
-  #sigma0r, sigma0i = sigma0.real, sigma0.imag
-  #sigma0 = make_sigma0(sigma0r, sigma0i, jnp_rho_i, jnpId)
-  sigma0 = normalize_sigma0(sigma0, jnp_rho_i, jnpId)
-  #expsigma = jnp.trace(jnp.matmul(sigma0,jnp_rho_i))
-  #sigma0 = sigma0+(1-expsigma)*jnpId
-  #if (n>nsteps/4):
-  #sigma0 = update_sigma_control2_l10(sigma0, jnpX, jnpP, jnpX2, jnpP2, jnpCXP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId, lrate)
-  #sigma0 = normalize_sigma0(sigma0, jnp_rho_i, jnpId)
-  #print (Initials)
-  print (n, time.time()-stime)
+  #print (n)
+  #temp = temp0/(1+n)
+  sigma0r_n = sigma0r_c+step_size*jnp.array(np.random.rand(nlevels, nlevels)-0.5)
+  sigma0i_n = sigma0i_c+step_size*jnp.array(np.random.rand(nlevels, nlevels)-0.5)
+  sigma0_n = make_sigma0(sigma0r_n, sigma0i_n, jnp_rho_i, jnpId)
+  cost_n, J_n = CostF_sigma_control_l101(sigma0_n, jnpX, jnpP, jnpX2, jnpP2, jnpCXP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId)
+  if (cost_n<cost_b):# and (J_n<=J_b):
+      sigma0, cost_b, J_b = sigma0_n, cost_n, J_n
+      print (n, cost_b, J_b, temp)
+  diff = cost_n-cost_c
+  metropolis = jnp.exp(-diff/temp)
+  #print (n, metropolis)
+  if (diff<0) or (jnp.array(np.random.rand())<metropolis):
+      sigma0r_c, sigma0i_c, cost_c = sigma0r_n, sigma0i_n, cost_n
+      temp = temp/(1+0.02*temp)
+  else:
+      temp = temp/(1-0.0002*temp)
+  n+=1
+
+  #print (n, time.time()-stime)
   
-  
+ 
 q3, q4, q5, alr, ali, A, B, q1t, q2t, rop_prxq = OP_PRXQ_Params(X, P, rho_i, rho_f, ts, tau)
 
 Q1j, Q2j, Q3j, Q4j, Q5j, theta_tj, rho_f_simul2, rop_stratj, diff = OPintegrate_sigma_strat(sigma0, X.full(), P.full(), X2.full(), P2.full(), CXP.full(), H.full(), rho_i.full(), ts, dt,  tau,  np_Idmat, np.identity(nlevels))
