@@ -74,13 +74,10 @@ in_ali = -.7
 fin_alr = 0#-0.1#in_alr*np.cos(t_f)+in_ali*np.sin(t_f)
 fin_ali = 0#0.5#in_ali*np.cos(t_f)-in_alr*np.sin(t_f)
 
-#xiR =0
-#xiI = 0
 
-
-rho_i = squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
-#rho_f = basis(nlevels,4)
-rho_f = squeeze(nlevels,  xiR+1j*xiI)*coherent(nlevels, fin_alr+1j*fin_ali)
+rho_i = (basis(nlevels, 0)+basis(nlevels,2))/np.sqrt(2)#squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
+rho_f = (basis(nlevels, 0)-basis(nlevels,2))/np.sqrt(2)#coherent(nlevels, fin_alr+1j*fin_ali)
+#rho_f = squeeze(nlevels,  xiR+1j*xiI)*coherent(nlevels, fin_alr+1j*fin_ali)
 #rho_f_int = squeeze(nlevels,  xiR*np.cos(2*t_f)-xiI*np.sin(2*t_f)+1j*(xiI*np.cos(2*t_f)+xiR*np.sin(2*t_f)))*coherent(nlevels, fin_alr*np.cos(t_f)-fin_ali*np.sin(t_f)+1j*(fin_ali*np.cos(t_f)+fin_alr*np.sin(t_f)))
 
 X = (a+a.dag())/np.sqrt(2)
@@ -97,11 +94,10 @@ Q3i = 2*(expect(X*X,rho_i)-Q1i**2)
 Q5i = 2*(expect(P*P,rho_i)-Q2i**2)
 Q4i = (expect(P*X+X*P,rho_i)-2*Q2i*Q1i)
 
-
-
-inits = 15*(np.random.rand(10)-0.5)
-#inits=np.array([-0.20454815,  3.12661525, -3.10051494,  2.90454994,  0.66154927,
-      # -0.17223483,  3.55780393, -0.66664125, -4.43558925, -3.96721373])
+inits = (np.random.rand(10)-0.5)
+#inits=np.array([ 3.167937  , -0.73915756, -2.5917065 , 19.205257  ,  0.76677966,
+#       -5.1844788 , -5.5650477 ,  8.844423  , 10.119776  ,  4.2625775 ]
+ #     )
 np_Idmat=np.identity(10)
 Idmat = jnp.array(np_Idmat)
 
@@ -140,7 +136,7 @@ jnp_rho_f = jnp.array(rho_f.full())
 
 cost_b, J_b = CostF_control_l101(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, l1max, ts, dt, tau, Idmat, jnpId)
 Initials_c, cost_c = Initials, cost_b
-step_size = 0.2
+step_size = 0.1
 #temp = temp0
 metropolis = 1.0
 tempf = 0.005
@@ -149,7 +145,7 @@ temp = tempi
 lrate = 1e-2
 
 #for n in range(nsteps):
-nsteps = 20000
+nsteps = 30000
 n=0
 while temp>tempf and (n<nsteps):
   stime = time.time()
@@ -160,7 +156,7 @@ while temp>tempf and (n<nsteps):
           #Initials, cost_b, J_b = Initials_n, cost_n, J_n
       #elif cost_n>2.0:
       Initials, cost_b, J_b = Initials_n, cost_n, J_n
-      print (n, cost_b, J_b, metropolis, temp)
+      print (n, -cost_b, J_b, metropolis, temp) #Cost is the negative of fidelity
   diff = cost_n-cost_c
   metropolis = jnp.exp(-diff/temp)
   if (diff<0) or (jnp.array(np.random.rand())<metropolis):

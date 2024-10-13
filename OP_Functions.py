@@ -197,13 +197,21 @@ def OPsoln_strat_JAX(Initials, X, P, H, rho_i, theta_t, ts, dt,  tau, Id):
   return rho
 
 
-def Tr_Distance(rho_f_simul, rho_f):
-  delrho = rho_f_simul-rho_f
-  eps = 1e-2
-  delrho2 = jnp.matmul(delrho, delrho)
-  dist = jnp.sqrt(jnp.trace(delrho2).real)
-  return 1e2*dist#-jnp.exp(-jnp.trace(delrho2).real/eps)
+#-jnp.exp(-jnp.trace(delrho2).real/eps)
 
+def Fidelity_PS(rho_f_simul, rho_f):
+  #delrho = rho_f_simul-rho_f
+  #eps = 1e-2
+  #delrho2 = jnp.matmul(delrho, delrho)
+  fid = jnp.trace(jnp.matmul(rho_f_simul, rho_f).real)
+  return fid#-jnp.exp(-jnp.trace(delrh
+
+def Tr_Distance(rho_f_simul, rho_f):
+  #delrho = rho_f_simul-rho_f
+  #eps = 1e-2
+  #delrho2 = jnp.matmul(delrho, delrho)
+  #dist = jnp.sqrt(jnp.trace(delrho2).real)
+  return -Fidelity_PS(rho_f_simul, rho_f)#+1e2*dist
 
 def CostF_strat(Initials, X, P, H,  rho_i, rho_f, theta_t, ts, dt, tau, Id):
   rho_f_simul = OPsoln_strat_JAX(Initials, X, P, H, rho_i, theta_t, ts, dt, tau, Id)
@@ -373,11 +381,15 @@ def rho_update_control_l10(i, Input_Initials): #Optimal control integration with
   k021 = k02+dt*(-2*k11+2*csth*(-snth*G02-csth*G11+r*G01)/tau)  
   '''
   
-  H_update = -1j*(jnp.matmul(H, rho)-jnp.matmul(rho, H))
-  Lind_update = (-jnp.matmul(delV, rho)-jnp.matmul(rho, delV))/(4*tau)
-  read_update = r*(jnp.matmul(delL, rho)+ jnp.matmul(rho, delL))*(1.0/(2*tau))
-  rho_update =H_update+Lind_update+read_update
-  rho1 = rho + rho_update*dt
+  #H_update = -1j*(jnp.matmul(H, rho)-jnp.matmul(rho, H))
+  #Lind_update = (-jnp.matmul(delV, rho)-jnp.matmul(rho, delV))/(4*tau)
+  #read_update = r*(jnp.matmul(delL, rho)+ jnp.matmul(rho, delL))*(1.0/(2*tau))
+  #rho_update =H_update+Lind_update+read_update
+  Fac1 = r*delL/(2*tau)-delV/(4*tau)
+  rho1 = jnp.matmul(jnp.matmul(Id+dt*(Fac1-1j*H),rho),Id+dt*(Fac1+1j*H))
+  tmptr = jnp.trace(rho1)
+  rho1 = rho1/tmptr
+  #rho1 = rho + rho_update*dt
   Idth1 = Idth+1e0*dt*(r**2-2*r*expL+expV)/(2*tau)
   return (X, P, H, rho1, l1max, G101, G011, k101, k011, G201, G111, G021, k201, k111, k021, Idth1, ts, tau, dt, j+1, Id)
 
@@ -596,13 +608,17 @@ def OPintegrate_strat(Initials, X, P, H, rho_i, l1max, ts, dt,  tau, Idmat, Id):
       Q5[j] = np.trace(np.matmul(Pjump2,rho)).real-expP**2
       Q4[j] = np.trace(np.matmul(np.matmul(X, P)+np.matmul(P,X),rho)).real/2.0-expX*expP
       delV = Ljump2-expV*Id
-      H_update = -1j*(np.matmul(H, rho)-np.matmul(rho, H))
-      Lind_update = (-np.matmul(delV, rho)-np.matmul(rho, delV))/(4*tau)
-      read_update = r*(np.matmul(delL, rho)+ np.matmul(rho, delL))*(1.0/(2*tau))
-      drho = H_update+Lind_update+read_update
+      #H_update = -1j*(np.matmul(H, rho)-np.matmul(rho, H))
+      #Lind_update = (-np.matmul(delV, rho)-np.matmul(rho, delV))/(4*tau)
+      #read_update = r*(np.matmul(delL, rho)+ np.matmul(rho, delL))*(1.0/(2*tau))
+      #drho = H_update+Lind_update+read_update
+      Fac1 = r*delL/(2*tau)-delV/(4*tau)
+      rho = np.matmul(np.matmul(Id+dt*(Fac1-1j*H),rho),Id+dt*(Fac1+1j*H))
+      temptr = np.trace(rho)
+      rho = rho/temptr
       #print (Lind_update)
       #print (np.trace(drho).real)
-      rho+=(drho)*dt
+      #rho+=(drho)*dt
       G10, G01, k10, k01, G20, G11, G02, k20, k11, k02 = G_k_updates(G10, G01, k10, k01, G20, G11, G02, k20, k11, k02, csth, snth, r, dt, tau, l1)
       '''
       G101 = G10+dt*(G01-snth*(csth*k10+snth*k01)/(4*tau))
