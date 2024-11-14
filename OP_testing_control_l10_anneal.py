@@ -145,7 +145,7 @@ temp = tempi
 lrate = 1e-2
 
 #for n in range(nsteps):
-nsteps = 30000
+nsteps = 1000
 n=0
 while temp>tempf and (n<nsteps):
   stime = time.time()
@@ -172,7 +172,7 @@ while temp>tempf and (n<nsteps):
   #if (n>nsteps/4):
   #Initials = update_control2_l10(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId, lrate)
   #print (Initials)
- # print (n, time.time()-stime)
+  #print (n, time.time()-stime)
   
 
   

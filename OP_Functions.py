@@ -60,52 +60,59 @@ def OPsoln_strat_SHO(X, P, H, rho_i, alr, ali, A, B, ts, theta_t,  tau, varRetur
   t_f = ts[-1]
   dt = ts[1]-ts[0]
   I_t = 0
-  expLs = np.zeros(len(ts))
-  expMs = np.zeros(len(ts))
-  varLs = np.zeros(len(ts))
-  varMs = np.zeros(len(ts))
-  covLMs = np.zeros(len(ts))
+  expXs = np.zeros(len(ts))
+  expPs = np.zeros(len(ts))
+  varXs = np.zeros(len(ts))
+  varPs = np.zeros(len(ts))
+  covXPs = np.zeros(len(ts))
   rop_strat = np.zeros(len(ts))
   nbar = np.zeros(len(ts))
   i=0
+  nlevels = X.dims[0][0]
+  Id = qeye(nlevels)
   while (i<len(ts)):
     #print (ts[i])
     t = ts[i]
     theta = theta_t[i]
     phi = theta + t
     #print (t)
-    #csth, snth = np.cos(theta), np.sin(theta)
-    csph, snph = np.cos(phi), np.sin(phi)
+    csth, snth = np.cos(theta), np.sin(theta)
+    #csph, snph = np.cos(phi), np.sin(phi)
     #cs2ph, sn2ph = np.cos(2*phi), np.sin(2*phi)
     #Ljump = csth*X+snth*P
-    Ljump = csph*X+snph*P
+    Ljump = csth*X+snth*P
     Ljump2 = Ljump*Ljump
     #Ljump2_a = (csph**2)*X*X+(snph**2)*P*P+csph*snph*(X*P+P*X)
     #Mjump = -snth*X+csth*P
-    Mjump = -snph*X+csph*P
+    #Mjump = -snth*X+csth*P
     expL = expect(Ljump,rho).real
-    expM = expect(Mjump,rho).real
-    expLs[i] = expL
-    expMs[i] = expM
+    expX = expect(X,rho).real
+    expP = expect(P,rho).real
+    expXs[i] = expX
+    expPs[i] = expP
     delL = Ljump - expL
     delVjump = Ljump2-expect(Ljump2, rho).real
     #delL2 = delL*delL
-    varL = expect(Ljump*Ljump,rho).real-expL**2
+    X2 = X*X
+    varX = expect(X2,rho).real-expX**2
     #varL1 = expect(Ljump2_a,rho).real-expL**2
     if (varReturn ==1):
-      delM = Mjump-expM
-      varLs[i] = varL
-      Mjump2 = Mjump*Mjump
-      varMs[i] = expect(Mjump2,rho).real-expM**2
-      covLMs[i] = (expect(Ljump*Mjump+Mjump*Ljump,rho).real-2*expL*expM)/2.0
-      nbar[i] = expect((Ljump2+Mjump2-1)/2.0,rho)
+      #delM = Mjump-expM
+      varXs[i] = varX
+      #Mjump2 = Mjump*Mjump
+      P2 = P*P
+      varPs[i] = expect(P2,rho).real-expP**2
+      covXPs[i] = (expect(X*P+P*X,rho).real-2*expX*expP)/2.0
+      nbar[i] = expect((X2+P2-1)/2.0,rho)
     ht = np.exp(-1j*phi)*(alr+1j*ali+1j*t*(A+1j*B)/(8*tau))+np.exp(-1j*phi)*I_t
     r =  ht.real
     rop_strat[i]=r
     if(i<len(ts)-1):
-        drhodt = ((-delVjump*rho-rho*delVjump)/(4*tau)+r*(delL*rho+rho*delL)/(2*tau))
+        #drhodt = ((-delVjump*rho-rho*delVjump)/(4*tau)+r*(delL*rho+rho*delL)/(2*tau)-1j*H*rho+1j*rho*H)
+        F = -delVjump/(4*tau)+r*delL/(2*tau)
+        rho1 = (Id+dt*(-1j*H+F))*rho*(Id+dt*(1j*H+F))
         #print (drhodt.tr())
-        rho1 = rho + drhodt*dt
+        rho1 = rho1/rho1.tr()
         #rho1 = rho+((-delVjump*rho-rho*delVjump)/(4*tau)+r*(delL*rho+rho*delL)/(2*tau))*dt
         rho = rho1#/rho1.tr()
         #print ((A-1j*B)*(np.exp(1j*2*t)-1)/(16*tau)-I_t)
@@ -116,9 +123,9 @@ def OPsoln_strat_SHO(X, P, H, rho_i, alr, ali, A, B, ts, theta_t,  tau, varRetur
     i+=1
     #print (expM)
   if (varReturn == 1):
-    return rho, expLs, expMs, varLs, covLMs, varMs,rop_strat,nbar
+    return rho, expXs, expPs, varXs, covXPs, varPs,rop_strat,nbar
   else:
-    return rho, expLs, expMs
+    return rho, expXs, expPs
 
 
 
@@ -162,16 +169,16 @@ def rho_update_strat(i, Input_Initials):
   t = ts[j]
   theta = theta_t[j]
   phi = theta+t
-  #csth, snth = jnp.cos(theta), jnp.sin(theta)
-  csph, snph = jnp.cos(phi), jnp.sin(phi)
+  csth, snth = jnp.cos(theta), jnp.sin(theta)
+  #csph, snph = jnp.cos(phi), jnp.sin(phi)
   #cs2ph, sn2ph = jnp.cos(2*phi), jnp.sin(2*phi)
-  Ljump = csph*X+snph*P
+  Ljump = csth*X+snth*P
   Ljump2 = jnp.matmul(Ljump, Ljump)#X2*csth**2 + P2*snth**2 + (XP + PX)*csth*snth
   #Mjump = -snph*X+csph*P
   expX = jnp.trace(jnp.matmul(X, rho)).real
   expP = jnp.trace(jnp.matmul(P, rho)).real
   expV = jnp.trace(jnp.matmul(Ljump2, rho)).real
-  expL = csph*expX + snph*expP
+  expL = csth*expX + snth*expP
   #expM = -snph*expX + csph*expP
   delL = Ljump - expL*Id
   delV = Ljump2-expV*Id
@@ -179,16 +186,18 @@ def rho_update_strat(i, Input_Initials):
   ht = jnp.matmul(delh_t_Mat, Initials) + jnp.exp(-1j*phi)*I_t
   r = ht.real
   #H_update = -1j*(jnp.matmul(H, rho)-jnp.matmul(rho, H))
-  Lind_update = (-jnp.matmul(delV, rho)-jnp.matmul(rho, delV))/(4*tau)
-  read_update = r*(jnp.matmul(delL, rho)+ jnp.matmul(rho, delL))*(1.0/(2*tau))
-  rho1 = rho + (Lind_update+read_update)*dt
+  #Lind_update = (-jnp.matmul(delV, rho)-jnp.matmul(rho, delV))/(4*tau)
+  #read_update = r*(jnp.matmul(delL, rho)+ jnp.matmul(rho, delL))*(1.0/(2*tau))
+  F = -delV/(4*tau)+r*delL/(2*tau)
+  rho1 = jnp.matmul(jnp.matmul(Id+dt*(-1j*H+F),rho), Id+dt*(1j*H+F))#+ (H_update+Lind_update+read_update)*dt
+  rho1 = rho1/jnp.trace(rho1).real
   delI_t_Mat = jnp.array([0.0  ,0. , 1j*jnp.exp(1j*2*phi)/(8.0*tau), jnp.exp(1j*2*phi)/(8.0*tau) ])
   I_t1 = I_t + jnp.matmul(delI_t_Mat, Initials)*dt
   return (Initials, X, P, H, rho1, I_t1, theta_t, ts, tau, dt, j+1, Id)
 
 
 def OPsoln_strat_JAX(Initials, X, P, H, rho_i, theta_t, ts, dt,  tau, Id):
-  #I_tR = jnp.array([0.0])
+  #I_tR = jnp.array([0.0]) 
   I_t = jnp.array([0.0 + 1j*0.0])
   rho = rho_i
   k1=0
@@ -215,7 +224,7 @@ def Tr_Distance(rho_f_simul, rho_f):
 
 def CostF_strat(Initials, X, P, H,  rho_i, rho_f, theta_t, ts, dt, tau, Id):
   rho_f_simul = OPsoln_strat_JAX(Initials, X, P, H, rho_i, theta_t, ts, dt, tau, Id)
-  return 1e2*Tr_Distance(rho_f_simul, rho_f)
+  return Tr_Distance(rho_f_simul, rho_f)
 
 
 @jit
