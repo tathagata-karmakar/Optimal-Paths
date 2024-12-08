@@ -69,7 +69,7 @@ rho_f = squeeze(nlevels,  xiR+1j*xiI)*coherent(nlevels, fin_alr+1j*fin_ali)
 #rho_f_int = squeeze(nlevels,  xiR*np.cos(2*t_f)-xiI*np.sin(2*t_f)+1j*(xiI*np.cos(2*t_f)+xiR*np.sin(2*t_f)))*coherent(nlevels, fin_alr*np.cos(t_f)-fin_ali*np.sin(t_f)+1j*(fin_ali*np.cos(t_f)+fin_alr*np.sin(t_f)))
 
 
-nsteps = 30000
+nsteps = 0
 X = (a+a.dag())/np.sqrt(2)
 P = (a-a.dag())/(np.sqrt(2)*1j)
 H = (X*X+P*P)/2.0
@@ -109,7 +109,7 @@ for n in range(nsteps):
 
 Initvals = np.array(Initials)
 
-with h5py.File("/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Gaussian_OP_no_control_Ex1.hdf5", "w") as f:
+with h5py.File("/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Gaussian_OP_no_control_Ex3.hdf5", "w") as f:
     dset1 = f.create_dataset("nlevels", data = nlevels, dtype ='int')
     dset2 = f.create_dataset("rho_i", data = rho_i.full())
     dset3 = f.create_dataset("rho_f", data = rho_f.full())

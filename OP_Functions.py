@@ -259,68 +259,55 @@ def PlotOP(Initials, X, P, H, rho_i, rho_f, ts, theta_t, tau, figname):
     q2f = expect(P,rho_f)
     
     t_i, t_f = ts[0], ts[-1]
-    fig, axs = plt.subplots(7,1,figsize=(6,14),sharex='all')
-    axs[0].plot(ts, q1t, linewidth =4, color = 'green', label = 'Gaussian Approx')
-    #axs[0].plot(ts, Q1j, color='k')
-    #axs[0].plot(ts, X_simul, linewidth =4, linestyle = 'dashed', color = 'blue', label = 'Ito')
+    fig, axs = plt.subplots(3,1,figsize=(6,14),sharex='all')
+    axs[0].plot(ts, q1t, linewidth =4, color = 'green', label = 'Gaussian assumption')
     axs[0].plot(ts, X_simul1, linewidth =3, linestyle = 'dashed', color = 'red', label = 'General')
-    axs[0].plot(t_i, q1i, "o", color = 'b')
-    axs[0].plot(t_f, q1f, "X" , color = 'r')
-    axs[0].plot(t_f, Q1, "^" , color = 'k')
+    axs[0].plot(t_i, q1i, "o", color = 'b', markersize =12)
+    axs[0].plot(t_f, q1f, "X" , color = 'r', markersize =12)
+    
     axs[1].plot(ts, q2t, linewidth = 4, color = 'green')
-    #axs[1].plot(ts, P_simul, linewidth =4, linestyle = 'dashed', color = 'blue')
     axs[1].plot(ts, P_simul1, linewidth =3, linestyle = 'dashed', color = 'red')
-
-    axs[1].plot(t_i, q2i, "o", color = 'b')
-    axs[1].plot(t_f, q2f, "X", color = 'r')
-    #axs[1].plot(t_f, Q2, "^" , color = 'k')
-    axs[0].set_ylabel(r'$\left\langle \hat{X} \right\rangle$', fontsize = 15)
-    axs[1].set_ylabel(r'$\left\langle \hat{P} \right\rangle$', fontsize = 15)
+    axs[1].plot(t_i, q2i, "o", color = 'b', markersize =12)
+    axs[1].plot(t_f, q2f, "X", color = 'r', markersize =12)
+   
+    axs[0].set_ylabel(r'$\left\langle \hat{X} \right\rangle$', fontsize = 18)
+    axs[1].set_ylabel(r'$\left\langle \hat{P} \right\rangle$', fontsize = 18)
     axs[0].tick_params(labelsize=15)
     axs[1].tick_params(labelsize=15)
-    axs[0].legend(loc=4,fontsize=12)
-
+    axs[0].legend(loc=1,fontsize=15)
+    
+    '''
     axs[2].axhline(q3/2.0, linewidth =4, color = 'green', label = 'PRXQ')
-    #axs[2].plot(ts, varX_simul, linewidth =4, linestyle = 'dashed', color = 'blue', label = 'Ito')
     axs[2].plot(ts, varX_simul1, linewidth =3, linestyle = 'dashed', color = 'red', label = 'Strato')
-    axs[2].plot(t_i, expect((X-q1i)*(X-q1i), rho_i), "o", color = 'b')
-    axs[2].plot(t_f, expect((X-q1f)*(X-q1f), rho_f), "X", color = 'r')
-    #axs[2].plot(t_f, V1, "^" , color = 'k')
+    axs[2].plot(t_i, expect((X-q1i)*(X-q1i), rho_i), "o", color = 'b', markersize =12)
+    axs[2].plot(t_f, expect((X-q1f)*(X-q1f), rho_f), "X", color = 'r', markersize =12)
     
     axs[3].axhline(q4/2.0, linewidth =4, color = 'green', label = 'PRXQ')
-    #axs[3].plot(ts, covXP_simul, linewidth =4, linestyle = 'dashed', color = 'blue', label = 'Ito')
     axs[3].plot(ts, covXP_simul1, linewidth =3, linestyle = 'dashed', color = 'red', label = 'Strato')
-    axs[3].plot(t_i, expect((X-q1i)*(P-q2i)/2.0+(P-q2i)*(X-q1i)/2.0, rho_i), "o", color = 'b')
-    axs[3].plot(t_f, expect((X-q1f)*(P-q2f)/2.0+(P-q2f)*(X-q1f)/2.0, rho_f), "X", color = 'r')
-    #axs[3].plot(t_f, V2, "^" , color = 'k')
+    axs[3].plot(t_i, expect((X-q1i)*(P-q2i)/2.0+(P-q2i)*(X-q1i)/2.0, rho_i), "o", color = 'b', markersize =12)
+    axs[3].plot(t_f, expect((X-q1f)*(P-q2f)/2.0+(P-q2f)*(X-q1f)/2.0, rho_f), "X", color = 'r', markersize =12)
 
     axs[4].axhline(q5/2.0, linewidth =4, color = 'green', label = 'PRXQ')
-    #axs[4].plot(ts, varP_simul, linewidth =4, linestyle = 'dashed', color = 'blue', label = 'Ito')
     axs[4].plot(ts, varP_simul1, linewidth =3, linestyle = 'dashed', color = 'red', label = 'Starto')
-    axs[4].plot(t_i, expect((P-q2i)*(P-q2i), rho_i), "o", color = 'b')
-    axs[4].plot(t_f, expect((P-q2f)*(P-q2f), rho_f), "X", color = 'r')
-    #axs[4].plot(t_f, V3, "^" , color = 'k')
+    axs[4].plot(t_i, expect((P-q2i)*(P-q2i), rho_i), "o", color = 'b', markersize =12)
+    axs[4].plot(t_f, expect((P-q2f)*(P-q2f), rho_f), "X", color = 'r', markersize =12)
+    '''
+    axs[2].plot(ts, rop_prxq, linewidth =4, color='green')
+    axs[2].plot(ts, rop_strat,linewidth =3, color='red', linestyle='dashed')
+    
 
-    axs[5].plot(ts, rop_prxq, linewidth =4, color='green')
-    axs[5].plot(ts, rop_strat,linewidth =3, color='red', linestyle='dashed')
-    #axs[5].plot(ts, nbar, color='red', linestyle ='dashed', linewidth = 3)
-    axs[6].plot(ts, np.zeros(len(ts)),linewidth =4, color='green')
-    axs[6].plot(ts, theta_t,linewidth =3, color='red', linestyle='dashed')
+    #axs[2].set_ylabel('var('+r'$X)$', fontsize = 15)
+    #axs[3].set_ylabel('cov('+r'$X,P)$', fontsize = 15)
+    #axs[4].set_ylabel('var('+r'$P)$', fontsize = 15)
+    axs[2].set_ylabel(r'$r^\star$', fontsize = 18)
 
-
-    axs[2].set_ylabel('var('+r'$X)$', fontsize = 15)
-    axs[3].set_ylabel('cov('+r'$X,P)$', fontsize = 15)
-    axs[4].set_ylabel('var('+r'$P)$', fontsize = 15)
-    axs[5].set_ylabel('$r^\star$', fontsize = 15)
-    axs[6].set_ylabel('$\\theta^\star$', fontsize = 15)
-    axs[6].set_xlabel('$t$', fontsize = 15)
-    axs[2].tick_params(labelsize=15)
-    axs[3].tick_params(labelsize=15)
-    axs[4].tick_params(labelsize=15)
-    axs[5].tick_params(labelsize=15)
-    axs[6].tick_params(labelsize=15)
+    axs[2].set_xlabel(r'$t$', fontsize = 18)
+    axs[2].tick_params(labelsize=18)
+    #axs[3].tick_params(labelsize=15)
+    #axs[4].tick_params(labelsize=15)
+    #axs[5].tick_params(labelsize=15)
     plt.subplots_adjust(wspace=0.1, hspace=0.1)
-    #plt.savefig('/Users/t_karmakar/Library/CloudStorage/Box-Box/Research/Optimal_Path/Plots/'+figname+'.pdf',bbox_inches='tight')
+    #plt.savefig('/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Plots/'+figname+'.pdf',bbox_inches='tight')
 
 def G_k_updates(G10, G01, k10, k01, G20, G11, G02, k20, k11, k02, csth, snth, r, dt, tau, l1):
     G101 = G10+dt*(G01-snth*(csth*k10+snth*k01)/(4*tau))
@@ -335,9 +322,16 @@ def G_k_updates(G10, G01, k10, k01, G20, G11, G02, k20, k11, k02, csth, snth, r,
     k021 = k02+dt*(-2*(1+2*l1)*k11+2*csth*(-snth*G02-csth*G11+r*G01)/tau)  
     return G101, G011, k101, k011, G201, G111, G021, k201, k111, k021
 
+def G_k_updates_first_order(G10, G01, k10, k01, csth, snth, dt, tau, l1):
+    G101 = G10+dt*(G01-snth*(csth*k10+snth*k01)/(4*tau))
+    G011 = G01+dt*(-(1+2*l1)*G10+csth*(csth*k10+snth*k01)/(4*tau))
+    k101 = k10+dt*k01
+    k011 = k01-dt*(1+2*l1)*k10
+    return G101, G011, k101, k011
+
 
 def rho_update_control_l10(i, Input_Initials): #Optimal control integration with \lambda_1=0
-  X, P, H, rho, l1max, G10, G01, k10, k01, G20, G11, G02, k20, k11, k02, Idth, ts, tau, dt, j, Id = Input_Initials
+  X, P, H, X2, rho, l1max, G10, G01, k10, k01, G20, G11, G02, k20, k11, k02, Idth, ts, tau, dt, j, Id = Input_Initials
   AGamma = (G10**2-G01**2-G20+G02)/2.0
   BGamma = G10*G01-G11
   theta = jnp.arctan2(BGamma, AGamma)/2.0
@@ -394,15 +388,16 @@ def rho_update_control_l10(i, Input_Initials): #Optimal control integration with
   #Lind_update = (-jnp.matmul(delV, rho)-jnp.matmul(rho, delV))/(4*tau)
   #read_update = r*(jnp.matmul(delL, rho)+ jnp.matmul(rho, delL))*(1.0/(2*tau))
   #rho_update =H_update+Lind_update+read_update
+  H1 = H+l1*X2
   Fac1 = r*delL/(2*tau)-delV/(4*tau)
-  rho1 = jnp.matmul(jnp.matmul(Id+dt*(Fac1-1j*H),rho),Id+dt*(Fac1+1j*H))
+  rho1 = jnp.matmul(jnp.matmul(Id+dt*(Fac1-1j*H1),rho),Id+dt*(Fac1+1j*H1))
   tmptr = jnp.trace(rho1)
   rho1 = rho1/tmptr
   #rho1 = rho + rho_update*dt
   Idth1 = Idth+1e0*dt*(r**2-2*r*expL+expV)/(2*tau)
-  return (X, P, H, rho1, l1max, G101, G011, k101, k011, G201, G111, G021, k201, k111, k021, Idth1, ts, tau, dt, j+1, Id)
+  return (X, P, H, X2, rho1, l1max, G101, G011, k101, k011, G201, G111, G021, k201, k111, k021, Idth1, ts, tau, dt, j+1, Id)
 
-def OPsoln_control_l10_JAX(Initials, X, P, H, rho_i, l1max, ts, dt,  tau, Idmat,  Id):
+def OPsoln_control_l10_JAX(Initials, X, P, H, X2, rho_i, l1max, ts, dt,  tau, Idmat,  Id):
   #I_tR = jnp.array([0.0])
   G10 = jnp.matmul(Idmat[0], Initials)
   G01 = jnp.matmul(Idmat[1], Initials)
@@ -422,7 +417,7 @@ def OPsoln_control_l10_JAX(Initials, X, P, H, rho_i, l1max, ts, dt,  tau, Idmat,
   #theta = jnp.array(0.0)
   k1=0
   Idth = 0.0
-  X, P, H,  rho, l1max, G10, G01, k10, k01, G20, G11, G02, k20, k11, k02, Idth, ts, tau, dt, k1, Id = jax.lax.fori_loop(0, len(ts)-1, rho_update_control_l10,(X, P, H,  rho, l1max, G10, G01, k10, k01, G20, G11, G02, k20, k11, k02, Idth,  ts, tau, dt, k1, Id))
+  X, P, H, X2,  rho, l1max, G10, G01, k10, k01, G20, G11, G02, k20, k11, k02, Idth, ts, tau, dt, k1, Id = jax.lax.fori_loop(0, len(ts)-1, rho_update_control_l10,(X, P, H, X2,  rho, l1max, G10, G01, k10, k01, G20, G11, G02, k20, k11, k02, Idth,  ts, tau, dt, k1, Id))
   #rho_update(Initials, X, P, H, X2, P2, XP, PX, rho, I_tR, I_tI, i, theta_t, ts, tau, dt)
   return rho, Idth
 
@@ -502,8 +497,8 @@ def CostF_control2_l10(Initials, X, P, H,  rho_i, rho_f, l1max, ts, dt, tau, Idm
   return Idth
 
 @jit
-def CostF_control_l101(Initials, X, P, H,  rho_i, rho_f, l1max, ts, dt, tau, Idmat, Id):
-  rho_f_simul, Idth = OPsoln_control_l10_JAX(Initials, X, P, H, rho_i, l1max, ts, dt, tau, Idmat, Id)
+def CostF_control_l101(Initials, X, P, H, X2,  rho_i, rho_f, l1max, ts, dt, tau, Idmat, Id):
+  rho_f_simul, Idth = OPsoln_control_l10_JAX(Initials, X, P, H, X2, rho_i, l1max, ts, dt, tau, Idmat, Id)
   return Tr_Distance(rho_f_simul, rho_f), Idth
 
 def CostF_sigma_control_l10(sigma0, X, P, X2, P2, CXP, H,  rho_i, rho_f, theta_t, ts, dt, tau, Idmat, Id):
@@ -551,7 +546,7 @@ def update_sigma_control2_l10(sigma0, X, P, X2, P2, CXP, H, rho_i, rho_f, theta_
           for w, dw in zip(sigma0, grads)])
 
 
-def OPintegrate_strat(Initials, X, P, H, rho_i, l1max, ts, dt,  tau, Idmat, Id):
+def OPintegrate_strat(Initials, X, P, H, X2, rho_i, l1max, ts, dt,  tau, Idmat, Id):
   #I_tR = jnp.array([0.0])
   G10 = np.matmul(Idmat[0], Initials)
   G01 = np.matmul(Idmat[1], Initials)
@@ -622,7 +617,8 @@ def OPintegrate_strat(Initials, X, P, H, rho_i, l1max, ts, dt,  tau, Idmat, Id):
       #read_update = r*(np.matmul(delL, rho)+ np.matmul(rho, delL))*(1.0/(2*tau))
       #drho = H_update+Lind_update+read_update
       Fac1 = r*delL/(2*tau)-delV/(4*tau)
-      rho = np.matmul(np.matmul(Id+dt*(Fac1-1j*H),rho),Id+dt*(Fac1+1j*H))
+      H1 = H+l1*X2
+      rho = np.matmul(np.matmul(Id+dt*(Fac1-1j*H1),rho),Id+dt*(Fac1+1j*H1))
       temptr = np.trace(rho)
       rho = rho/temptr
       #print (Lind_update)
@@ -645,6 +641,153 @@ def OPintegrate_strat(Initials, X, P, H, rho_i, l1max, ts, dt,  tau, Idmat, Id):
       j+=1
   #Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5 = jax.lax.fori_loop(0, len(ts), rho_integrate_JAX,(Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5))
   return Q1,Q2,Q3,Q4,Q5, theta_t, l1_t, rho, readout, diff
+
+def OP_stochastic_trajectory(X, P, H, X2, rho_i, l1_t, theta_t, ts, dt,  tau, Id):
+  rho = rho_i
+  j=0
+  Q1 = np.zeros(len(ts))
+  Q2 = np.zeros(len(ts))
+  Q3 = np.zeros(len(ts))
+  Q4 = np.zeros(len(ts))
+  Q5 = np.zeros(len(ts))
+  #theta_t = np.zeros(len(ts))
+  #l1_t = np.zeros(len(ts))
+  readout = np.zeros(len(ts))
+  Xjump2 = np.matmul(X, X)
+  Pjump2 = np.matmul(P, P)
+  Cxp2 = np.matmul(X, P)+np.matmul(P,X)
+  while (j<len(ts)):
+      t = ts[j]
+      theta = theta_t[j]
+      l1 = l1_t[j]
+      H1 = H+l1*Xjump2
+      csth, snth = np.cos(theta), np.sin(theta)
+      expX = np.trace(np.matmul(X, rho)).real
+      expP = np.trace(np.matmul(P, rho)).real
+      Ljump = csth*X+snth*P
+      Ljump2 = np.matmul(Ljump,Ljump)
+      Q1[j] = expX
+      Q2[j] = expP
+      Q3[j] = np.trace(np.matmul(Xjump2,rho)).real-expX**2
+      Q5[j] = np.trace(np.matmul(Pjump2,rho)).real-expP**2
+      Q4[j] = np.trace(np.matmul(Cxp2,rho)).real/2.0-expX*expP
+      expL = csth*expX + snth*expP
+      dW = np.random.normal(scale=np.sqrt(dt))
+      print (dW/np.sqrt(tau))
+      delL = Ljump - expL*Id
+      rho1 = rho+dt*(-1j*np.matmul(H1,rho)+1j*np.matmul(rho,H1)+(np.matmul(np.matmul(Ljump,rho),Ljump)-np.matmul(Ljump2, rho)/2.0-np.matmul(rho,Ljump2)/2.0)/(4*tau))+dW*(np.matmul(delL,rho)+np.matmul(rho,delL))/np.sqrt(4*tau)
+      rho = rho1
+      print (np.trace(rho))
+      readout[j] = expL+np.sqrt(tau)*dW/dt
+
+      j+=1
+  #Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5 = jax.lax.fori_loop(0, len(ts), rho_integrate_JAX,(Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5))
+  return Q1,Q2,Q3,Q4,Q5, rho, readout
+
+def OP_wcontrol(Initials, X, P, H, X2, rho_i, l1_t, theta_t, ts, dt,  tau, Idmat, Id):
+  #I_tR = jnp.array([0.0])
+  G10 = np.matmul(Idmat[0], Initials)
+  G01 = np.matmul(Idmat[1], Initials)
+  k10 = np.matmul(Idmat[2], Initials)
+  k01 = np.matmul(Idmat[3], Initials)
+  
+  rho = rho_i
+  j=0
+  Q1 = np.zeros(len(ts))
+  Q2 = np.zeros(len(ts))
+  Q3 = np.zeros(len(ts))
+  Q4 = np.zeros(len(ts))
+  Q5 = np.zeros(len(ts))
+  readout = np.zeros(len(ts))
+  
+  while (j<len(ts)):
+      t = ts[j]
+      theta = theta_t[j]
+      csth, snth = np.cos(theta), np.sin(theta)
+      l1 = l1_t[j]
+      #e_jphi = np.exp(-1j*phi)
+      #delh_t_Mat = e_jphi*np.array([1,1j,1j*t/(8.0*tau), -t/(8.0*tau),0,0,0,0,0])
+      #ht = np.matmul(delh_t_Mat, Initials) + e_jphi*I_t
+      r = csth*G10+snth*G01
+      readout[j] = r
+
+      Ljump = csth*X+snth*P
+      Xjump2 = np.matmul(X, X)#X2*csth**2 + P2*snth**2 + (XP + PX)*csth*snth
+      Ljump2 = np.matmul(Ljump, Ljump)
+      #Mjump = -snth*X+csth*P
+      Pjump2 = np.matmul(P,P)
+      expX = np.trace(np.matmul(X, rho)).real
+      expP = np.trace(np.matmul(P, rho)).real
+      expV = np.trace(np.matmul(Ljump2, rho)).real
+      expL = csth*expX + snth*expP
+      #exphi = 
+      #expM = -snth*expX + csth*expP
+      #print (expL)
+      Q1[j]=expX
+      Q2[j]=expP
+      delL = Ljump - expL*Id
+      #print (delL)
+      Q3[j] = np.trace(np.matmul(Xjump2,rho)).real-expX**2
+      Q5[j] = np.trace(np.matmul(Pjump2,rho)).real-expP**2
+      Q4[j] = np.trace(np.matmul(np.matmul(X, P)+np.matmul(P,X),rho)).real/2.0-expX*expP
+      delV = Ljump2-expV*Id
+      #H_update = -1j*(np.matmul(H, rho)-np.matmul(rho, H))
+      #Lind_update = (-np.matmul(delV, rho)-np.matmul(rho, delV))/(4*tau)
+      #read_update = r*(np.matmul(delL, rho)+ np.matmul(rho, delL))*(1.0/(2*tau))
+      #drho = H_update+Lind_update+read_update
+      Fac1 = r*delL/(2*tau)-delV/(4*tau)
+      H1 = H+l1*X2
+      rho = np.matmul(np.matmul(Id+dt*(Fac1-1j*H1),rho),Id+dt*(Fac1+1j*H1))
+      temptr = np.trace(rho)
+      rho = rho/temptr
+      #print (Lind_update)
+      #print (np.trace(drho).real)
+      #rho+=(drho)*dt
+      G10, G01, k10, k01 = G_k_updates_first_order(G10, G01, k10, k01,  csth, snth,  dt, tau, l1)
+      '''
+      G101 = G10+dt*(G01-snth*(csth*k10+snth*k01)/(4*tau))
+      G011 = G01+dt*(-G10+csth*(csth*k10+snth*k01)/(4*tau))
+      k101 = k10+dt*k01
+      k011 = k01-dt*k10
+      G201 = G20+dt*(2*G11+snth*(r*k10-csth*k20-snth*k11)/(2*tau))
+      G111 = G11+dt*(G02-G20+(r*(snth*k01-csth*k10)+(csth**2*k20-snth**2*k02))/(4*tau))
+      G021 = G02+dt*(-2*G11+csth*(snth*k02+csth*k11-r*k01)/(2*tau))
+      k201 = k20+dt*(2*k11+2*snth*(csth*G20+snth*G11-r*G10)/tau)
+      k111 = k11+dt*(-k20+k02+(r*(csth*G10-snth*G01)-csth**2*G20+snth**2*G02)/tau)
+      k021 = k02+dt*(-2*k11+2*csth*(-snth*G02-csth*G11+r*G01)/tau)  
+      G10, G01, k10, k01, G20, G11, G02, k20, k11, k02 = G101, G011, k101, k011, G201, G111, G021, k201, k111, k021
+      '''
+      j+=1
+  #Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5 = jax.lax.fori_loop(0, len(ts), rho_integrate_JAX,(Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5))
+  return Q1,Q2,Q3,Q4,Q5, rho, readout
+
+def OP_trajectory_JAX(i, Input_Initials):
+    X, P, H, X2,  rho, l1_t, theta_t, Idth,  ts, tau, dt, j, Id = Input_Initials
+    l1 = l1_t[j]
+    theta = theta_t[j]
+    H1 = H+l1*X2
+    csth, snth = jnp.cos(theta), jnp.sin(theta)
+    expX = jnp.trace(jnp.matmul(X, rho)).real
+    expP = jnp.trace(jnp.matmul(P, rho)).real
+    Ljump = csth*X+snth*P
+    Ljump2 = jnp.matmul(Ljump,Ljump)
+    expL = csth*expX + snth*expP
+    dW = np.random.normal(scale=np.sqrt(dt))
+    delL = Ljump - expL*Id
+    rho1 = rho+dt*(-1j*np.matmul(H1,rho)+1j*np.matmul(rho,H1)+(np.matmul(np.matmul(Ljump,rho),Ljump)-np.matmul(Ljump2, rho)/2.0-np.matmul(rho,Ljump2)/2.0)/(4*tau))+dW*(np.matmul(delL,rho)+np.matmul(rho,delL))/np.sqrt(4*tau)
+    return X, P, H, X2,  rho1, l1_t, theta_t, Idth,  ts, tau, dt, j+1, Id
+
+    
+def OP_stochastic_trajectory_JAX(X, P, H, X2, rho_i, l1_t, theta_t, ts, dt,  tau, Idmat, Id):
+  #rho = rho_i
+  rho = rho_i
+  #phi = jnp.array([theta_t[0]+ts[0]])
+  #theta = jnp.array(0.0)
+  k1=0
+  Idth = 0.0
+  X, P, H, X2,  rho, l1_t, theta_t, Idth,  ts, tau, dt, k1, Id = jax.lax.fori_loop(0, len(ts)-1, OP_trajectory_JAX,(X, P, H, X2,  rho, l1_t, theta_t, Idth,  ts, tau, dt, k1, Id))
+  return rho
+
 
 def OPintegrate_sigma_strat(sigma0, X, P, X2, P2, CXP, H, rho_i, ts, dt,  tau, Idmat, Id):
   rho = rho_i

@@ -56,7 +56,7 @@ X = (a+a.dag())/np.sqrt(2)
 P = (a-a.dag())/(np.sqrt(2)*1j)
 H = (X*X+P*P)/2.0
 
-PlotOP(Initvals, X, P, H, rho_i, rho_f, ts, theta_t, tau, 'tmpfigs')
+PlotOP(Initvals, X, P, H, rho_i, rho_f, ts, theta_t, tau, 'tmpfigs_talk')
 
 
 hf.close()

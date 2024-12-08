@@ -21,6 +21,7 @@ from pylab import rcParams
 from matplotlib import colors
 from qutip import *
 from OP_Functions import *
+import h5py
 os.environ["PATH"] += os.pathsep + '/Library/TeX/texbin'
 rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
 rc('text',usetex=True)
@@ -56,9 +57,9 @@ nlevels = 25
 a = destroy(nlevels)
 t_i = 0
 t_f = 5.0
-ts = np.linspace(t_i, t_f, int(t_f/0.01))
+ts = np.linspace(t_i, t_f, int(t_f/0.005))
 dt = ts[1]-ts[0]
-tau = 2.5
+tau = 15.0
 q4f = np.sqrt(1+4*tau*tau)-2*tau
 q3f = np.sqrt(4*tau*q4f)
 q5f = q3f*(1+q4f/(2*tau))
@@ -75,14 +76,17 @@ fin_alr = 0#-0.1#in_alr*np.cos(t_f)+in_ali*np.sin(t_f)
 fin_ali = 0#0.5#in_ali*np.cos(t_f)-in_alr*np.sin(t_f)
 
 
-rho_i = (basis(nlevels, 0)+basis(nlevels,2))/np.sqrt(2)#squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
-rho_f = (basis(nlevels, 0)-basis(nlevels,2))/np.sqrt(2)#coherent(nlevels, fin_alr+1j*fin_ali)
+#rho_i = (basis(nlevels, 0)+basis(nlevels,2))/np.sqrt(2)#squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
+#rho_f = (basis(nlevels, 0)-basis(nlevels,2))/np.sqrt(2)
+rho_i=coherent(nlevels, in_alr+1j*in_ali)
+rho_f=coherent(nlevels, fin_alr+1j*fin_ali)
 #rho_f = squeeze(nlevels,  xiR+1j*xiI)*coherent(nlevels, fin_alr+1j*fin_ali)
 #rho_f_int = squeeze(nlevels,  xiR*np.cos(2*t_f)-xiI*np.sin(2*t_f)+1j*(xiI*np.cos(2*t_f)+xiR*np.sin(2*t_f)))*coherent(nlevels, fin_alr*np.cos(t_f)-fin_ali*np.sin(t_f)+1j*(fin_ali*np.cos(t_f)+fin_alr*np.sin(t_f)))
 
 X = (a+a.dag())/np.sqrt(2)
 P = (a-a.dag())/(np.sqrt(2)*1j)
 H = (X*X+P*P)/2.0
+X2 = X*X
 #Ljump = X
 #Mjump = P
 rho_i = rho_i*rho_i.dag()
@@ -124,7 +128,7 @@ theta_t = np.zeros(len(ts))
 jnptheta_t = jnp.array(theta_t)
 l1_t = np.zeros(len(ts))
 jnpl1_t = jnp.array(l1_t)
-l1max = 0.0
+l1max = 0.2
 tb = 0
 jnpId = jnp.identity(nlevels, dtype=complex)
 jnpX = jnp.array(X.full())
@@ -132,9 +136,9 @@ jnpP = jnp.array(P.full())
 jnpH = jnp.array(H.full())
 jnp_rho_i = jnp.array(rho_i.full())
 jnp_rho_f = jnp.array(rho_f.full())
+jnpX2= jnp.matmul(jnpX, jnpX)
 
-
-cost_b, J_b = CostF_control_l101(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, l1max, ts, dt, tau, Idmat, jnpId)
+cost_b, J_b = CostF_control_l101(Initials, jnpX, jnpP, jnpH, jnpX2, jnp_rho_i, jnp_rho_f, l1max, ts, dt, tau, Idmat, jnpId)
 Initials_c, cost_c = Initials, cost_b
 step_size = 0.1
 #temp = temp0
@@ -145,12 +149,12 @@ temp = tempi
 lrate = 1e-2
 
 #for n in range(nsteps):
-nsteps = 1000
+nsteps = 300
 n=0
 while temp>tempf and (n<nsteps):
   stime = time.time()
   Initials_n = Initials_c+step_size*jnp.array(np.random.rand(10)-0.5)
-  cost_n, J_n = CostF_control_l101(Initials_n, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, l1max, ts, dt, tau, Idmat, jnpId)
+  cost_n, J_n = CostF_control_l101(Initials_n, jnpX, jnpP, jnpH, jnpX2, jnp_rho_i, jnp_rho_f, l1max, ts, dt, tau, Idmat, jnpId)
   if (cost_n<cost_b):
       #if cost_n<=2.0 and  (J_n<=J_b):
           #Initials, cost_b, J_b = Initials_n, cost_n, J_n
@@ -192,12 +196,24 @@ k020 = np.matmul(np_Idmat[9], Initvals)
 #rho_f_simul1, X_simul1, P_simul1, varX_simul1, covXP_simul1, varP_simul1, rop_strat,nbar, theta_t = OPsoln_control_l10(X, P, H, rho_i, alr, ali, A, B, Cv, k0r, k0i, Dvp, Dvm, ts,   tau, 1)
 #rho_f_simuld, X_simuld, P_simuld, varX_simuld, covXP_simuld, varP_simuld, rop_stratd,nbard = OPsoln_strat_SHO(X, P, H, rho_i, alr, ali, A, B, ts, theta_t,  tau, 1)# OPsoln_control_l10(X, P, H, rho_i, alr, ali, A, B, Cv, k0r, k0i, Dvp, Dvm, ts,   tau, 1)
 
-Q1j, Q2j, Q3j, Q4j, Q5j, theta_tj, l1_tj, rho_f_simul2, rop_stratj, diff = OPintegrate_strat(Initvals, X.full(), P.full(), H.full(), rho_i.full(), l1max, ts, dt,  tau,  np_Idmat, np.identity(nlevels))
+Q1j, Q2j, Q3j, Q4j, Q5j, theta_tj, l1_tj, rho_f_simul2, rop_stratj, diff = OPintegrate_strat(Initvals, X.full(), P.full(), H.full(), X2.full(), rho_i.full(), l1max, ts, dt,  tau,  np_Idmat, np.identity(nlevels))
 a = (X+1j*P)/np.sqrt(2)
 q1i = expect(X,rho_i)
 q1f = expect(X,rho_f)
 q2i = expect(P,rho_i)
 q2f = expect(P,rho_f)
+
+with h5py.File("/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Extmp1.hdf5", "w") as f:
+    dset1 = f.create_dataset("nlevels", data = nlevels, dtype ='int')
+    dset2 = f.create_dataset("rho_i", data = rho_i.full())
+    dset3 = f.create_dataset("rho_f", data = rho_f.full())
+    dset4 = f.create_dataset("ts", data = ts)
+    dset5 = f.create_dataset("tau", data = tau)
+    dset6 = f.create_dataset("theta_t", data = theta_tj)
+    dset6 = f.create_dataset("l1_t", data = l1_tj)
+    dset6 = f.create_dataset("r_t", data = rop_stratj)
+    dset7 = f.create_dataset("Initvals", data = Initvals)    
+f.close()
 
 
 t_i, t_f = ts[0], ts[-1]
@@ -250,10 +266,10 @@ axs[7].plot(ts, l1_tj, linewidth =3, color='blue', linestyle='dashed')
 axs[2].set_ylabel('var('+r'$X)$', fontsize = 15)
 axs[3].set_ylabel('cov('+r'$X,P)$', fontsize = 15)
 axs[4].set_ylabel('var('+r'$P)$', fontsize = 15)
-axs[5].set_ylabel('$r^\star$', fontsize = 15)
-axs[6].set_ylabel('$\\theta^\star$', fontsize = 15)
-axs[7].set_ylabel('$\lambda_1$', fontsize = 15)
-axs[7].set_xlabel('$t$', fontsize = 15)
+axs[5].set_ylabel(r'$r^\star$', fontsize = 15)
+axs[6].set_ylabel(r'$\theta^\star$', fontsize = 15)
+axs[7].set_ylabel(r'$\lambda_1$', fontsize = 15)
+axs[7].set_xlabel(r'$t$', fontsize = 15)
 axs[2].tick_params(labelsize=15)
 axs[3].tick_params(labelsize=15)
 axs[4].tick_params(labelsize=15)
@@ -261,5 +277,5 @@ axs[5].tick_params(labelsize=15)
 axs[6].tick_params(labelsize=15)
 axs[7].tick_params(labelsize=15)
 plt.subplots_adjust(wspace=0.1, hspace=0.1)
-#plt.savefig('/Users/t_karmakar/Library/CloudStorage/Box-Box/Research/Optimal_Path/Plots/control_l10_method322.pdf',bbox_inches='tight')
+#plt.savefig('/Users/t_karmakar/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Plots/control_l10_method322.pdf',bbox_inches='tight')
 #PlotOP(Initvals, X, P, H, rho_i, rho_f, ts, theta_t, tau, 'tmpfig_control')
