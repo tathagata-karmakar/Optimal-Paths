@@ -76,10 +76,10 @@ fin_alr = 0#-0.1#in_alr*np.cos(t_f)+in_ali*np.sin(t_f)
 fin_ali = 0#0.5#in_ali*np.cos(t_f)-in_alr*np.sin(t_f)
 
 
-#rho_i = (basis(nlevels, 0)+basis(nlevels,2))/np.sqrt(2)#squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
-#rho_f = (basis(nlevels, 0)-basis(nlevels,2))/np.sqrt(2)
-rho_i=coherent(nlevels, in_alr+1j*in_ali)
-rho_f=coherent(nlevels, fin_alr+1j*fin_ali)
+rho_i = (basis(nlevels, 0)-basis(nlevels,4))/np.sqrt(2)#squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
+rho_f = (basis(nlevels, 0)+basis(nlevels,4))/np.sqrt(2)
+#rho_i=coherent(nlevels, in_alr+1j*in_ali)
+#rho_f=coherent(nlevels, fin_alr+1j*fin_ali)
 #rho_f = squeeze(nlevels,  xiR+1j*xiI)*coherent(nlevels, fin_alr+1j*fin_ali)
 #rho_f_int = squeeze(nlevels,  xiR*np.cos(2*t_f)-xiI*np.sin(2*t_f)+1j*(xiI*np.cos(2*t_f)+xiR*np.sin(2*t_f)))*coherent(nlevels, fin_alr*np.cos(t_f)-fin_ali*np.sin(t_f)+1j*(fin_ali*np.cos(t_f)+fin_alr*np.sin(t_f)))
 
@@ -149,7 +149,7 @@ temp = tempi
 lrate = 1e-2
 
 #for n in range(nsteps):
-nsteps = 300
+nsteps = 30000
 n=0
 while temp>tempf and (n<nsteps):
   stime = time.time()
@@ -203,16 +203,17 @@ q1f = expect(X,rho_f)
 q2i = expect(P,rho_i)
 q2f = expect(P,rho_f)
 
-with h5py.File("/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Extmp1.hdf5", "w") as f:
+with h5py.File("/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Ex5.hdf5", "w") as f:
     dset1 = f.create_dataset("nlevels", data = nlevels, dtype ='int')
     dset2 = f.create_dataset("rho_i", data = rho_i.full())
-    dset3 = f.create_dataset("rho_f", data = rho_f.full())
+    dset3 = f.create_dataset("rho_f_target", data = rho_f.full())
     dset4 = f.create_dataset("ts", data = ts)
     dset5 = f.create_dataset("tau", data = tau)
     dset6 = f.create_dataset("theta_t", data = theta_tj)
-    dset6 = f.create_dataset("l1_t", data = l1_tj)
-    dset6 = f.create_dataset("r_t", data = rop_stratj)
-    dset7 = f.create_dataset("Initvals", data = Initvals)    
+    dset7 = f.create_dataset("l1_t", data = l1_tj)
+    dset8 = f.create_dataset("r_t", data = rop_stratj)
+    dset9 = f.create_dataset("Initvals", data = Initvals)   
+    dset9 = f.create_dataset("l1max", data = l1max)   
 f.close()
 
 

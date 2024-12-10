@@ -213,7 +213,14 @@ def Fidelity_PS(rho_f_simul, rho_f):
   #eps = 1e-2
   #delrho2 = jnp.matmul(delrho, delrho)
   fid = jnp.trace(jnp.matmul(rho_f_simul, rho_f).real)
-  return fid#-jnp.exp(-jnp.trace(delrh
+  return fid
+
+def np_Fidelity_PS(rho_f_simul, rho_f):
+  #delrho = rho_f_simul-rho_f
+  #eps = 1e-2
+  #delrho2 = jnp.matmul(delrho, delrho)
+  fid = np.trace(np.matmul(rho_f_simul, rho_f).real)
+  return fid
 
 def Tr_Distance(rho_f_simul, rho_f):
   #delrho = rho_f_simul-rho_f
@@ -673,11 +680,16 @@ def OP_stochastic_trajectory(X, P, H, X2, rho_i, l1_t, theta_t, ts, dt,  tau, Id
       Q4[j] = np.trace(np.matmul(Cxp2,rho)).real/2.0-expX*expP
       expL = csth*expX + snth*expP
       dW = np.random.normal(scale=np.sqrt(dt))
-      print (dW/np.sqrt(tau))
+      #print (dW/np.sqrt(tau))
       delL = Ljump - expL*Id
+      F = -np.matmul(delL, delL)*dt/(4*tau)+delL*dW/(2*np.sqrt(tau))
+      F1 = Id+F+np.matmul(F,F)/2
+      F2 = np.matmul(F1,(Id-1j*H1*dt))
+      F3 = np.matmul((Id+1j*H1*dt),F1)
+      #rho1 = np.matmul(np.matmul(F2,rho),F3)
       rho1 = rho+dt*(-1j*np.matmul(H1,rho)+1j*np.matmul(rho,H1)+(np.matmul(np.matmul(Ljump,rho),Ljump)-np.matmul(Ljump2, rho)/2.0-np.matmul(rho,Ljump2)/2.0)/(4*tau))+dW*(np.matmul(delL,rho)+np.matmul(rho,delL))/np.sqrt(4*tau)
-      rho = rho1
-      print (np.trace(rho))
+      rho = rho1/np.trace(rho1)
+      #print (np.trace(rho))
       readout[j] = expL+np.sqrt(tau)*dW/dt
 
       j+=1
@@ -762,7 +774,7 @@ def OP_wcontrol(Initials, X, P, H, X2, rho_i, l1_t, theta_t, ts, dt,  tau, Idmat
   return Q1,Q2,Q3,Q4,Q5, rho, readout
 
 def OP_trajectory_JAX(i, Input_Initials):
-    X, P, H, X2,  rho, l1_t, theta_t, Idth,  ts, tau, dt, j, Id = Input_Initials
+    X, P, H, X2,  rho, l1_t, theta_t, dWt, Idth,  ts, tau, dt, j, Id = Input_Initials
     l1 = l1_t[j]
     theta = theta_t[j]
     H1 = H+l1*X2
@@ -772,20 +784,26 @@ def OP_trajectory_JAX(i, Input_Initials):
     Ljump = csth*X+snth*P
     Ljump2 = jnp.matmul(Ljump,Ljump)
     expL = csth*expX + snth*expP
-    dW = np.random.normal(scale=np.sqrt(dt))
+    dW = dWt[j]
     delL = Ljump - expL*Id
-    rho1 = rho+dt*(-1j*np.matmul(H1,rho)+1j*np.matmul(rho,H1)+(np.matmul(np.matmul(Ljump,rho),Ljump)-np.matmul(Ljump2, rho)/2.0-np.matmul(rho,Ljump2)/2.0)/(4*tau))+dW*(np.matmul(delL,rho)+np.matmul(rho,delL))/np.sqrt(4*tau)
-    return X, P, H, X2,  rho1, l1_t, theta_t, Idth,  ts, tau, dt, j+1, Id
+    F = -jnp.matmul(delL, delL)*dt/(4*tau)+delL*dW/(2*jnp.sqrt(tau))
+    F1 = Id+F+jnp.matmul(F,F)/2
+    F2 = jnp.matmul(F1,(Id-1j*H1*dt))
+    F3 = jnp.matmul((Id+1j*H1*dt),F1)
+    rho1 = jnp.matmul(jnp.matmul(F2,rho),F3)
+    rho1 = rho1/jnp.trace(rho1)
+    #rho1 = rho+dt*(-1j*jnp.matmul(H1,rho)+1j*jnp.matmul(rho,H1)+(jnp.matmul(jnp.matmul(Ljump,rho),Ljump)-jnp.matmul(Ljump2, rho)/2.0-jnp.matmul(rho,Ljump2)/2.0)/(4*tau))+dW*(jnp.matmul(delL,rho)+jnp.matmul(rho,delL))/jnp.sqrt(4*tau)
+    return X, P, H, X2,  rho1, l1_t, theta_t, dWt, Idth,  ts, tau, dt, j+1, Id
 
-    
-def OP_stochastic_trajectory_JAX(X, P, H, X2, rho_i, l1_t, theta_t, ts, dt,  tau, Idmat, Id):
+@jit    
+def OP_stochastic_trajectory_JAX(X, P, H, X2, rho_i, l1_t, theta_t, dWt, ts, dt,  tau, Id):
   #rho = rho_i
   rho = rho_i
   #phi = jnp.array([theta_t[0]+ts[0]])
   #theta = jnp.array(0.0)
   k1=0
   Idth = 0.0
-  X, P, H, X2,  rho, l1_t, theta_t, Idth,  ts, tau, dt, k1, Id = jax.lax.fori_loop(0, len(ts)-1, OP_trajectory_JAX,(X, P, H, X2,  rho, l1_t, theta_t, Idth,  ts, tau, dt, k1, Id))
+  X, P, H, X2,  rho, l1_t, theta_t, dWt, Idth,  ts, tau, dt, k1, Id = jax.lax.fori_loop(0, len(ts)-1, OP_trajectory_JAX,(X, P, H, X2,  rho, l1_t, theta_t, dWt, Idth,  ts, tau, dt, k1, Id))
   return rho
 
 

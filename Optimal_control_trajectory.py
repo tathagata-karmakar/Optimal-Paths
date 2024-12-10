@@ -52,17 +52,19 @@ import optax
 #torch.autograd.set_detect_anomaly(True)
 
 
-hf = h5py.File('/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Extmp1.hdf5', 'r')
+hf = h5py.File('/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Ex3.hdf5', 'r')
 
 nlevels = int(np.array(hf['nlevels']))
 a = destroy(nlevels)
 tau = np.array(hf['tau']).item()
 theta_t = np.array(hf['theta_t'])
+theta0 = np.zeros(len(theta_t))
 l1_t = np.array(hf['l1_t'])
+l10 = np.zeros(len(l1_t))
 ts = np.array(hf['ts'])
 ropt = np.array(hf['r_t'])
 rho_i =Qobj(np.array(hf['rho_i']))
-rho_f = Qobj(np.array(hf['rho_f']))
+rho_f = Qobj(np.array(hf['rho_f_target']))
 Initvals = np.array(hf['Initvals'])
 dt = ts[1]-ts[0]
 np_Idmat=np.identity(10)
@@ -74,8 +76,8 @@ H = (X*X+P*P)/2.0
 X2 = X*X
 #Ljump = X
 #Mjump = P
-rho_i = rho_i*rho_i.dag()
-rho_f = rho_f*rho_f.dag()
+#rho_i = rho_i*rho_i.dag()
+#rho_f = rho_f*rho_f.dag()
 
 jnpX = jnp.array(X.full())
 jnpP = jnp.array(P.full())
