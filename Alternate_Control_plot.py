@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sun Dec  8 11:22:59 2024
+Created on Tue Dec 17 16:19:07 2024
 
 @author: tatha_k
 """
@@ -52,38 +52,42 @@ import optax
 #torch.autograd.set_detect_anomaly(True)
 
 
-hf = h5py.File('/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Histogram_Ex4_improved.hdf5', 'r')
+hf = h5py.File('/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Ex4.hdf5', 'r')
 
 nlevels = int(np.array(hf['nlevels']))
-#a = destroy(nlevels)
+a = destroy(nlevels)
 tau = np.array(hf['tau']).item()
 theta_t = np.array(hf['theta_t'])
-theta0 = np.zeros(len(theta_t))  #Control parameter \theta = 0
+theta0 =np.array(hf['theta_t_sample'])  #Control parameter \theta = 0
 l1_t = np.array(hf['l1_t'])
-l10 = np.zeros(len(l1_t))   #Control parameter \lambda_1 = 0
+l10 = np.array(hf['l1_t_sample'])  #Control parameter \lambda_1 = 0
 ts = np.array(hf['ts'])
-#ropt = np.array(hf['r_t'])
+ropt = np.array(hf['r_t'])
 rho_i =Qobj(np.array(hf['rho_i']))
 rho_f = Qobj(np.array(hf['rho_f_target']))
 Initvals = np.array(hf['Initvals'])
 dt = ts[1]-ts[0]
-samplesize =np.array(hf['Sample_size']).item()
-fidelities0 = np.array(hf['Fidelities_wo_control'])
-fidelities_OP = np.array(hf['Fidelities_w_control'])
-#np_Idmat=np.identity(10)
-#Idmat = jnp.array(np_Idmat)
+np_Idmat=np.identity(10)
+Idmat = jnp.array(np_Idmat)
 
-
-fig, ax = plt.subplots(figsize=(6,4))
-
-
-ax.hist(fidelities_OP, label = 'Optimal control', hatch ='|')
-ax.hist(fidelities0, label="Sample control", alpha = 0.6, hatch ='\\')
-ax.set_xlabel(r'$\mathcal{F}\left(\hat{\rho}_f,\hat{\rho}(t_f)\right)$', fontsize=18)
-ax.set_ylabel('Number of Trajectories', fontsize=18)
-ax.tick_params(labelsize=15)
-ax.legend(loc=2,fontsize=15)
-ax.set_xlim(0,1)
-plt.savefig('/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Plots/histogramtmp.pdf',bbox_inches='tight')
+X = (a+a.dag())/np.sqrt(2)
+P = (a-a.dag())/(np.sqrt(2)*1j)
+H = (X*X+P*P)/2.0
+X2 = X*X
 
 hf.close()
+
+
+fig, axs = plt.subplots(2,1,figsize=(6,4),sharex='all')
+axs[0].tick_params(labelsize=14)
+axs[1].tick_params(labelsize=14)
+axs[1].plot(ts, l10, linewidth =3, color='orange')
+axs[0].plot(ts, theta0, linewidth =3, color='orange')
+axs[0].set_ylabel(r'$\theta(t)$',fontsize=15)
+axs[1].set_ylabel(r'$\lambda_1(t)$',fontsize=15)
+axs[1].set_xlabel(r'$t$',fontsize=15)
+plt.subplots_adjust(wspace=0.22, hspace=0.08)
+
+#plt.savefig('/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Plots/sample_control_ex4.pdf',bbox_inches='tight')
+
+

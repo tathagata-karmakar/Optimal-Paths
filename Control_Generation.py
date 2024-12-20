@@ -21,7 +21,8 @@ from pylab import rcParams
 from matplotlib import colors
 from qutip import *
 from OP_Functions import *
-from OP_Functions_tmp import *
+import h5py
+
 os.environ["PATH"] += os.pathsep + '/Library/TeX/texbin'
 rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
 rc('text',usetex=True)
@@ -42,85 +43,35 @@ from jaxopt import OptaxSolver
 import optax
 
 
-nlevels = 25
-
-#rho_f = coherent(nlevels, 0.5)
+fname  = '/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Ex8.hdf5'
+hf = h5py.File(fname, 'r')
+l1max = 0.2
+nlevels = int(np.array(hf['nlevels']))
 a = destroy(nlevels)
-t_i = 0
-t_f = 3
-ts = np.linspace(t_i, t_f, 500)
+tau = np.array(hf['tau']).item()
+theta_t = np.array(hf['theta_t'])
+theta0 = np.zeros(len(theta_t))  #Control parameter \theta = 0
+l1_t = np.array(hf['l1_t'])
+l10 = np.zeros(len(l1_t))   #Control parameter \lambda_1 = 0
+ts = np.array(hf['ts'])
+ropt = np.array(hf['r_t'])
+rho_i =Qobj(np.array(hf['rho_i']))
+rho_f = Qobj(np.array(hf['rho_f_target']))
+Initvals = np.array(hf['Initvals'])
+l1max = np.array(hf['l1max']).item()
 dt = ts[1]-ts[0]
-tau = 5.0
-q4f = np.sqrt(1+4*tau*tau)-2*tau
-q3f = np.sqrt(4*tau*q4f)
-q5f = q3f*(1+q4f/(2*tau))
+np_Idmat=np.identity(10)
+Idmat = jnp.array(np_Idmat)
+hf.close()
 
-snh2r = -np.sqrt(q4f**2+(q3f-q5f)**2/4.0)
-csh2r = (q3f+q5f)/2.0
-rparam = snh2r+csh2r
-r_sq = np.log(rparam)/2
-xiR = r_sq*(q5f-q3f)/(2*snh2r)
-xiI = r_sq*(-q4f)/snh2r
-in_alr = .5
-in_ali = -.7
-fin_alr = in_alr*np.cos(t_f)+in_ali*np.sin(t_f)
-fin_ali = in_ali*np.cos(t_f)-in_alr*np.sin(t_f)
-
-#xiR =0
-#xiI = 0
-
-
-rho_i = squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
-#rho_f = basis(nlevels,4)
-rho_f = squeeze(nlevels,  xiR+1j*xiI)*coherent(nlevels, fin_alr+1j*fin_ali)
-rho_f_int = squeeze(nlevels,  xiR*np.cos(2*t_f)-xiI*np.sin(2*t_f)+1j*(xiI*np.cos(2*t_f)+xiR*np.sin(2*t_f)))*coherent(nlevels, fin_alr*np.cos(t_f)-fin_ali*np.sin(t_f)+1j*(fin_ali*np.cos(t_f)+fin_alr*np.sin(t_f)))
-
-nsteps = 2000
 X = (a+a.dag())/np.sqrt(2)
 P = (a-a.dag())/(np.sqrt(2)*1j)
 H = (X*X+P*P)/2.0
+X2 = X*X
 #Ljump = X
 #Mjump = P
-rho_i = rho_i*rho_i.dag()
-rho_f = rho_f*rho_f.dag()
-rho_f_int = rho_f_int*rho_f_int.dag()
-sigma_i = rand_herm(nlevels)
-sigma_i = sigma_i-expect(sigma_i, rho_i)
-
-XItf = X*np.cos(t_f)+P*np.sin(t_f)
-PItf = P*np.cos(t_f)-X*np.sin(t_f)
-
-Q1 = expect(XItf,rho_f_int)
-Q2 = expect(PItf,rho_f_int)
-V1 = expect(XItf*XItf,rho_f_int)-Q1**2
-V3 = expect(PItf*PItf,rho_f_int)-Q2**2
-V2 = (expect(XItf*PItf+PItf*XItf,rho_f_int)-2*Q1*Q2)/2.0
-
-Q1i = expect(X,rho_i)
-Q2i = expect(P,rho_i)
-Q3i = 2*(expect(X*X,rho_i)-Q1i**2)
-Q5i = 2*(expect(P*P,rho_i)-Q2i**2)
-Q4i = (expect(P*X+X*P,rho_i)-2*Q2i*Q1i)
-
-lrate = 1e-2
-#q3, q4, q5, alr, ali, A, B, q1t, q2t,rop_prxq = OP_PRXQ_Params(X, P, rho_i, rho_f, ts, tau)
-
-Ncos = 7
-#NC = 2*Ncos
-inits1 = 5*(np.random.rand(10)-0.5)
-inits2 = 5*(np.random.rand(2*Ncos)-0.5)
-inits = np.concatenate((inits1, inits2))
-Fmat = Fourier_mat(Ncos, t_i, t_f, ts)
-Fmat = jnp.array(Fmat)
-Initials = jnp.array(inits)
-#Coeffs = 0*Coeffs
-
-#inits = 5*(np.random.rand(10)-0.5)
-#inits[0]=expect(X,rho_i).real
-#inits = np.array([ 2.03119478, -0.64861863,  3.06237402,  3.65953078,  3.56056756,
-       #-0.66798523, -3.0849589 , -2.22235786, -1.85641707])
-#alr, ali, A, B, Cv, k0r, k0i, Dvp, Dvm, GLM0 = inits[0], inits[1], inits[2], inits[3], inits[4], inits[5], inits[6], inits[7], inits[8], inits[9]
-#Initials = jnp.array(inits)
+#rho_i = rho_i*rho_i.dag()
+#rho_f = rho_f*rho_f.dag()
 
 
 jnpId = jnp.identity(nlevels, dtype=complex)
@@ -128,20 +79,55 @@ jnpX = jnp.array(X.full())
 jnpP = jnp.array(P.full())
 jnpH = jnp.array(H.full())
 jnp_rho_i = jnp.array(rho_i.full())
-jnp_rho_f_int = jnp.array(rho_f_int.full())
 jnp_rho_f = jnp.array(rho_f.full())
+jnpX2= jnp.matmul(jnpX, jnpX)
+
+
 q1i = expect(X,rho_i)
 q1f = expect(X,rho_f)
 q2i = expect(P,rho_i)
 q2f = expect(P,rho_f)
-MMat1 = Multiply_Mat(10, Ncos)
+
+nvars =4
+Nc = 5
+inits = (np.random.rand(nvars+4*Nc)-0.5)
+Initials = jnp.array(inits)
+theta_mat, l1_mat = Fourier_mat(nvars, Nc, ts[0], ts[-1], ts)
+MMat = Multiply_Mat(nvars, Nc)
+jnp_theta_mat = jnp.array(theta_mat)
+jnp_l1_mat = jnp.array(l1_mat)
+jnp_MMat = jnp.array(MMat)
+lrate = 0.01
+
+nsteps =10000
+
 for n in range(nsteps):
   stime = time.time()
-  print (CostFt_control_l10_2input(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, Fmat, ts, dt, tau, Ncos, MMat1, jnpId))
-  Initials = update_control1_l10_2input(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, Fmat, ts, dt, tau, Ncos, MMat1, jnpId, lrate)
-  Initials = update_control2_l10_2input(Initials,  jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, Fmat, ts, dt, tau, Ncos, MMat1, jnpId, lrate)
+  print (CostF_control_generate(Initials, jnpX, jnpP, jnpH, jnpX2, jnp_rho_i, jnp_rho_f, jnp_theta_mat, jnp_l1_mat, l1max, ts, dt, tau, Nc, jnp_MMat, jnpId))
+  Initials = update_control_generate(Initials, jnpX, jnpP, jnpH, jnpX2, jnp_rho_i, jnp_rho_f, jnp_theta_mat, jnp_l1_mat, l1max, ts, dt, tau, Nc, jnp_MMat, jnpId, nvars, lrate)
+  #Initials = update_control2_l10_2input(Initials,  jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, Fmat, ts, dt, tau, Ncos, MMat1, jnpId, lrate)
   print (n, time.time()-stime)
   
+  
+Initvals = np.array(Initials)
+theta_t = (np.pi/2.0)*jnp.tanh(2*jnp.matmul(theta_mat,Initvals)/np.pi)
+l1_t = (l1max)*jnp.tanh(jnp.matmul(l1_mat,Initials)/l1max)
+
+with h5py.File(fname, 'a') as f:
+    dset1 = f.create_dataset("theta_t_sample", data = theta_t)
+    dset2 = f.create_dataset("l1_t_sample", data = l1_t)
+    dset3 = f.create_dataset("Initials_sample", data = Initvals)
+  
+fig, axs = plt.subplots(2,1,figsize=(4,6),sharex='all')
+axs[0].plot(ts, theta_t, linewidth =4, color = 'green')
+axs[1].plot(ts, l1_t, linewidth =4, color = 'green')
+axs[0].set_ylabel(r'$\theta(t)$', fontsize =12)
+axs[1].set_ylabel(r'$\lambda_1(t)$',  fontsize =12)
+axs[1].set_xlabel(r'$t$', fontsize =12)
+plt.subplots_adjust(wspace=0.05, hspace=0.1)
+plt.savefig('/Users/t_karmakar/Library/CloudStorage/Box-Box/Research/Optimal_Path/Plots/sample_control_extmp.pdf',bbox_inches='tight')
+
+'''
 Initvals = np.array(Initials)
 theta_t = (np.pi/2.0)*jnp.tanh(2*jnp.matmul(Fmat, Initials)/np.pi)
 
@@ -232,5 +218,5 @@ plt.subplots_adjust(wspace=0.1, hspace=0.1)
 #plt.savefig('/Users/t_karmakar/Library/CloudStorage/Box-Box/Research/Optimal_Path/Plots/control_l10_method2_tmp.pdf',bbox_inches='tight')
 #plt.plot(ts, np.matmul(Fmat, cinits))
 #plt.plot(ts, jnp.matmul(Fmat, Coeffs))
-
+'''
 

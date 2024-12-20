@@ -682,8 +682,8 @@ def OP_stochastic_trajectory(X, P, H, X2, rho_i, l1_t, theta_t, ts, dt,  tau, Id
       dW = np.random.normal(scale=np.sqrt(dt))
       #print (dW/np.sqrt(tau))
       delL = Ljump - expL*Id
-      F = -np.matmul(delL, delL)*dt/(4*tau)+delL*dW/(2*np.sqrt(tau))
-      F1 = Id+F+np.matmul(F,F)/2
+      F = -np.matmul(delL, delL)*dt/(8*tau)+delL*dW/(2*np.sqrt(tau))
+      F1 = Id+F#+np.matmul(F,F)/2
       F2 = np.matmul(F1,(Id-1j*H1*dt))
       F3 = np.matmul((Id+1j*H1*dt),F1)
       #rho1 = np.matmul(np.matmul(F2,rho),F3)
@@ -786,14 +786,14 @@ def OP_trajectory_JAX(i, Input_Initials):
     expL = csth*expX + snth*expP
     dW = dWt[j]
     delL = Ljump - expL*Id
-    F = -jnp.matmul(delL, delL)*dt/(4*tau)+delL*dW/(2*jnp.sqrt(tau))
-    F1 = Id+F+jnp.matmul(F,F)/2
+    F = -jnp.matmul(delL, delL)*dt/(8*tau)+delL*dW/(2*jnp.sqrt(tau))
+    F1 = Id+F#+jnp.matmul(F,F)/2
     F2 = jnp.matmul(F1,(Id-1j*H1*dt))
     F3 = jnp.matmul((Id+1j*H1*dt),F1)
     rho1 = jnp.matmul(jnp.matmul(F2,rho),F3)
     rho1 = rho1/jnp.trace(rho1)
     #rho1 = rho+dt*(-1j*jnp.matmul(H1,rho)+1j*jnp.matmul(rho,H1)+(jnp.matmul(jnp.matmul(Ljump,rho),Ljump)-jnp.matmul(Ljump2, rho)/2.0-jnp.matmul(rho,Ljump2)/2.0)/(4*tau))+dW*(jnp.matmul(delL,rho)+jnp.matmul(rho,delL))/jnp.sqrt(4*tau)
-    return X, P, H, X2,  rho1, l1_t, theta_t, dWt, Idth,  ts, tau, dt, j+1, Id
+    return (X, P, H, X2,  rho1, l1_t, theta_t, dWt, Idth,  ts, tau, dt, j+1, Id)
 
 @jit    
 def OP_stochastic_trajectory_JAX(X, P, H, X2, rho_i, l1_t, theta_t, dWt, ts, dt,  tau, Id):
@@ -884,3 +884,110 @@ def OPintegrate_sigma_strat(sigma0, X, P, X2, P2, CXP, H, rho_i, ts, dt,  tau, I
       j+=1
   #Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5 = jax.lax.fori_loop(0, len(ts), rho_integrate_JAX,(Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5))
   return Q1,Q2,Q3,Q4,Q5, theta_t, rho, readout, diff
+
+
+def Multiply_Mat(nvars, Ncos):
+    tmp1 = np.zeros((nvars,nvars+4*Ncos))
+    #tmp2 = np.zeros((4,10+2*Ncos), dtype=complex)
+    zerovec = np.zeros(4*Ncos) 
+    idmat = np.identity(nvars)
+    for i in range(nvars):
+        tmp1[i] = np.concatenate((idmat[i],zerovec))
+    return tmp1
+
+def Fourier_fns(nvars, Ncos, t_i, t_f, t):
+    tmp = np.zeros(2*Ncos)
+    for i in range(2*Ncos):
+        #if i==0:
+            #tmp[i]=1.0
+        if (i<=Ncos-1):
+            tmp[i]=np.cos(2*np.pi*(i)*(t-t_i)/(t_f-t_i))#-1
+        else:
+            tmp[i]=np.sin(2*np.pi*(i+1-Ncos)*(t-t_i)/(t_f-t_i))
+    theta_mat = np.zeros(nvars+4*Ncos)
+    l1_mat = np.zeros(nvars+4*Ncos)
+    theta_mat[nvars:nvars+2*Ncos] = tmp
+    l1_mat[nvars+2*Ncos:] = tmp
+    
+    return theta_mat, l1_mat
+
+def Fourier_mat(nvars, Ncos, t_i, t_f, ts):
+    theta_mat = np.zeros((len(ts),nvars+4*Ncos))
+    l1_mat = np.zeros((len(ts),nvars+4*Ncos))
+    for i in range(len(ts)):
+        tmp1, tmp2=Fourier_fns(nvars, Ncos,t_i, t_f, ts[i])
+        theta_mat[i,:] = tmp1
+        l1_mat[i,:] = tmp2
+    return theta_mat, l1_mat
+
+def rho_update_control_generate(i, Input_Initials): #Optimal control integration with \lambda_1=0
+  Initials, X, P, H, X2, rho, G10, G01, k10, k01, Idth, theta_mat, l1_mat, l1max, ts, tau, dt, j, Ncos, Id = Input_Initials
+  #I_t = I_tR + 1j*I_tI
+  #print (tau)
+  t = ts[j]
+  #theta = theta_t[j]
+  theta = (np.pi/2.0)*jnp.tanh(2*jnp.matmul(theta_mat[j],Initials)/np.pi)
+  l1 = (l1max)*jnp.tanh(jnp.matmul(l1_mat[j],Initials)/l1max)
+  
+  
+  csth, snth = jnp.cos(theta), jnp.sin(theta)
+  #csph, snph = jnp.cos(phi), jnp.sin(phi)
+  #cs2ph, sn2ph = jnp.cos(2*phi), jnp.sin(2*phi)
+  Ljump = csth*X+snth*P
+  Ljump2 = jnp.matmul(Ljump, Ljump)#X2*csth**2 + P2*snth**2 + (XP + PX)*csth*snth
+  #Mjump = -snth*X+csth*P
+  expX = jnp.trace(jnp.matmul(X, rho)).real
+  expP = jnp.trace(jnp.matmul(P, rho)).real
+  expV = jnp.trace(jnp.matmul(Ljump2, rho)).real
+  expL = csth*expX + snth*expP
+  #exphi = 
+  #expM = -snph*expX + csph*expP
+  delL = Ljump - expL*Id
+  delV = Ljump2-expV*Id
+  #e_jphi = jnp.exp(-1j*phi)
+  #delh_t_Mat = e_jphi*(delh_t_mat1+t*delh_t_mat2)
+  #ht = jnp.matmul(delh_t_Mat, Initials) + e_jphi*I_t
+  r = csth*G10+snth*G01
+  G101, G011, k101, k011 = G_k_updates_first_order(G10, G01, k10, k01,  csth, snth,  dt, tau, l1)
+
+  
+  Fac1 = r*delL/(2*tau)-delV/(4*tau)
+  H1 = H+l1*X2
+  rho1 = jnp.matmul(jnp.matmul(Id+dt*(Fac1-1j*H1),rho),Id+dt*(Fac1+1j*H1))
+  temptr = jnp.trace(rho1)
+  rho1 = rho1/temptr
+  #rho1 = rho + rho_update*dt
+  
+  Idth1 = Idth#+dt*(theta_star-theta)**2
+  #Idth1 = -(-(GLL-w**2/4.0)/(2*tau)-(kappaLL+2*r*w)/2.0-(kappaMM+2*v*z)/2.0)
+  return (Initials, X, P, H, X2, rho1, G101, G011, k101, k011, Idth1, theta_mat, l1_mat, l1max,  ts, tau, dt, j+1, Ncos, Id)
+
+
+def MLP_control_generate(Initials, X, P, H, X2, rho_i, theta_mat, l1_mat, l1max, ts, dt,  tau, Ncos, MMat, Id):
+  
+  Idth =  0.0
+  G10 = jnp.matmul(MMat[0],Initials)#+jnp.array([0])
+  G01 = jnp.matmul(MMat[1],Initials)#+jnp.array([0])
+  k10 = jnp.matmul(MMat[2],Initials)#+jnp.array([0])
+  k01 = jnp.matmul(MMat[3],Initials)#+jnp.array([0])
+  rho = rho_i
+  k1=0
+  Idth=0
+  Initials, X, P, H, X2,  rho, G10, G01, k10, k01, Idth,  theta_mat, l1_mat, l1max, ts, tau, dt, k1, Ncos, Id = jax.lax.fori_loop(0, len(ts)-1, rho_update_control_generate,(Initials, X, P, H, X2,  rho, G10, G01, k10, k01, Idth,  theta_mat, l1_mat, l1max, ts, tau, dt, k1, Ncos, Id))
+  #rho_update(Initials, X, P, H, X2, P2, XP, PX, rho, I_tR, I_tI, i, theta_t, ts, tau, dt)
+  return rho, Idth
+
+def CostF_control_generate(Initials,  X, P, H, X2,  rho_i, rho_f, theta_mat, l1_mat, l1max, ts, dt, tau, Ncos, MMat, Id):
+  rho_f_simul, Idth =  MLP_control_generate(Initials,  X, P, H, X2, rho_i, theta_mat, l1_mat, l1max, ts, dt, tau, Ncos, MMat, Id)
+  #print (Idth)
+  return Tr_Distance(rho_f_simul, rho_f)
+
+
+@jit
+def update_control_generate(Initials,  X, P, H, X2, rho_i, rho_f, theta_mat, l1_mat, l1max, ts, dt, tau, Ncos, MMat, Id, nvars,  step_size):
+    grads=grad(CostF_control_generate)(Initials, X, P, H, X2, rho_i, rho_f,theta_mat, l1_mat, l1max,  ts, dt, tau, Ncos, MMat, Id)
+    #gg = np.ones(14+10)
+    #gg[:10]=0
+    #grads = grads*gg
+    return jnp.array([w - step_size * dw
+          for w, dw in zip(Initials, grads)])

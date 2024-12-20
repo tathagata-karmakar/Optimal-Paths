@@ -70,16 +70,16 @@ rparam = snh2r+csh2r
 r_sq = np.log(rparam)/2
 xiR = r_sq*(q5f-q3f)/(2*snh2r)
 xiI = r_sq*(-q4f)/snh2r
-in_alr = .5
-in_ali = -.7
+in_alr = .3
+in_ali = -.3
 fin_alr = 0#-0.1#in_alr*np.cos(t_f)+in_ali*np.sin(t_f)
 fin_ali = 0#0.5#in_ali*np.cos(t_f)-in_alr*np.sin(t_f)
 
 
-rho_i = (basis(nlevels, 0)-basis(nlevels,4))/np.sqrt(2)#squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
-rho_f = (basis(nlevels, 0)+basis(nlevels,4))/np.sqrt(2)
-#rho_i=coherent(nlevels, in_alr+1j*in_ali)
-#rho_f=coherent(nlevels, fin_alr+1j*fin_ali)
+#rho_i = basis(nlevels, 4)#-basis(nlevels,4))/np.sqrt(2)#squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
+#rho_f = basis(nlevels, 0)#+basis(nlevels,1))/np.sqrt(2)
+rho_i=coherent(nlevels, in_alr+1j*in_ali)#-coherent(nlevels, -in_alr-1j*in_ali))#(coherent(nlevels, in_alr+1j*in_ali)+coherent(nlevels, -in_alr-1j*in_ali))/np.sqrt(2)
+rho_f=coherent(nlevels, fin_alr+1j*fin_ali)#+coherent(nlevels, -in_alr-1j*in_ali))#coherent(nlevels, fin_alr+1j*fin_ali)
 #rho_f = squeeze(nlevels,  xiR+1j*xiI)*coherent(nlevels, fin_alr+1j*fin_ali)
 #rho_f_int = squeeze(nlevels,  xiR*np.cos(2*t_f)-xiI*np.sin(2*t_f)+1j*(xiI*np.cos(2*t_f)+xiR*np.sin(2*t_f)))*coherent(nlevels, fin_alr*np.cos(t_f)-fin_ali*np.sin(t_f)+1j*(fin_ali*np.cos(t_f)+fin_alr*np.sin(t_f)))
 
@@ -91,6 +91,8 @@ X2 = X*X
 #Mjump = P
 rho_i = rho_i*rho_i.dag()
 rho_f = rho_f*rho_f.dag()
+rho_i = rho_i/rho_i.tr()
+rho_f = rho_f/rho_f.tr()
 
 Q1i = expect(X,rho_i)
 Q2i = expect(P,rho_i)
@@ -203,7 +205,7 @@ q1f = expect(X,rho_f)
 q2i = expect(P,rho_i)
 q2f = expect(P,rho_f)
 
-with h5py.File("/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Ex5.hdf5", "w") as f:
+with h5py.File("/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Extmp.hdf5", "w") as f:
     dset1 = f.create_dataset("nlevels", data = nlevels, dtype ='int')
     dset2 = f.create_dataset("rho_i", data = rho_i.full())
     dset3 = f.create_dataset("rho_f_target", data = rho_f.full())
