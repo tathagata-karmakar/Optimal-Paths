@@ -43,7 +43,7 @@ from jaxopt import OptaxSolver
 import optax
 
 
-fname  = '/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Ex8.hdf5'
+fname  = '/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Ex12.hdf5'
 hf = h5py.File(fname, 'r')
 l1max = 0.2
 nlevels = int(np.array(hf['nlevels']))
@@ -58,7 +58,7 @@ ropt = np.array(hf['r_t'])
 rho_i =Qobj(np.array(hf['rho_i']))
 rho_f = Qobj(np.array(hf['rho_f_target']))
 Initvals = np.array(hf['Initvals'])
-l1max = np.array(hf['l1max']).item()
+#l1max = np.array(hf['l1max']).item()
 dt = ts[1]-ts[0]
 np_Idmat=np.identity(10)
 Idmat = jnp.array(np_Idmat)
@@ -99,7 +99,7 @@ jnp_l1_mat = jnp.array(l1_mat)
 jnp_MMat = jnp.array(MMat)
 lrate = 0.01
 
-nsteps =10000
+nsteps =5000
 
 for n in range(nsteps):
   stime = time.time()

@@ -59,7 +59,7 @@ t_i = 0
 t_f = 5.0
 ts = np.linspace(t_i, t_f, int(t_f/0.005))
 dt = ts[1]-ts[0]
-tau = 15.0
+tau = 10.0
 q4f = np.sqrt(1+4*tau*tau)-2*tau
 q3f = np.sqrt(4*tau*q4f)
 q5f = q3f*(1+q4f/(2*tau))
@@ -70,8 +70,8 @@ rparam = snh2r+csh2r
 r_sq = np.log(rparam)/2
 xiR = r_sq*(q5f-q3f)/(2*snh2r)
 xiI = r_sq*(-q4f)/snh2r
-in_alr = .3
-in_ali = -.3
+in_alr = .15
+in_ali = -.15
 fin_alr = 0#-0.1#in_alr*np.cos(t_f)+in_ali*np.sin(t_f)
 fin_ali = 0#0.5#in_ali*np.cos(t_f)-in_alr*np.sin(t_f)
 
@@ -205,7 +205,7 @@ q1f = expect(X,rho_f)
 q2i = expect(P,rho_i)
 q2f = expect(P,rho_f)
 
-with h5py.File("/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Extmp.hdf5", "w") as f:
+with h5py.File("/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Ex12.hdf5", "w") as f:
     dset1 = f.create_dataset("nlevels", data = nlevels, dtype ='int')
     dset2 = f.create_dataset("rho_i", data = rho_i.full())
     dset3 = f.create_dataset("rho_f_target", data = rho_f.full())
