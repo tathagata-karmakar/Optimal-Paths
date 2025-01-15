@@ -43,7 +43,7 @@ from jaxopt import OptaxSolver
 import optax
 
 
-fname  = '/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Ex12.hdf5'
+fname  = '/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Ex13.hdf5'
 hf = h5py.File(fname, 'r')
 l1max = 0.2
 nlevels = int(np.array(hf['nlevels']))
