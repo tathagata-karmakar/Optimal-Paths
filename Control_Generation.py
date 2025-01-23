@@ -43,7 +43,7 @@ from jaxopt import OptaxSolver
 import optax
 
 
-fname  = '/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Ex13.hdf5'
+fname  = '/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Extmp.hdf5'
 hf = h5py.File(fname, 'r')
 l1max = 0.2
 nlevels = int(np.array(hf['nlevels']))
@@ -125,7 +125,7 @@ axs[0].set_ylabel(r'$\theta(t)$', fontsize =12)
 axs[1].set_ylabel(r'$\lambda_1(t)$',  fontsize =12)
 axs[1].set_xlabel(r'$t$', fontsize =12)
 plt.subplots_adjust(wspace=0.05, hspace=0.1)
-plt.savefig('/Users/t_karmakar/Library/CloudStorage/Box-Box/Research/Optimal_Path/Plots/sample_control_extmp.pdf',bbox_inches='tight')
+plt.savefig('/Users/t_karmakar/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Plots/sample_control_extmp.pdf',bbox_inches='tight')
 
 '''
 Initvals = np.array(Initials)

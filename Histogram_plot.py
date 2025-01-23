@@ -52,7 +52,7 @@ import optax
 #torch.autograd.set_detect_anomaly(True)
 
 
-hf = h5py.File('/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Histogram_Ex13.hdf5', 'r')
+hf = h5py.File('/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Histogram_Ex15.hdf5', 'r')
 
 nlevels = int(np.array(hf['nlevels']))
 #a = destroy(nlevels)
@@ -84,6 +84,6 @@ ax.set_ylabel('Number of Trajectories', fontsize=18)
 ax.tick_params(labelsize=15)
 ax.legend(loc=2,fontsize=15)
 ax.set_xlim(0,1)
-#plt.savefig('/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Plots/histogramtmp.pdf',bbox_inches='tight')
+#plt.savefig('/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Plots/histogram_catstate.pdf',bbox_inches='tight')
 
 hf.close()
