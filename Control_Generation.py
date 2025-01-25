@@ -41,9 +41,10 @@ import collections
 from typing import Iterable
 from jaxopt import OptaxSolver
 import optax
+script_dir = os.path.dirname(__file__)
 
 
-fname  = '/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Extmp.hdf5'
+fname  = script_dir+'/Data/Optimal_control_Extmp.hdf5'
 hf = h5py.File(fname, 'r')
 l1max = 0.2
 nlevels = int(np.array(hf['nlevels']))
@@ -125,12 +126,12 @@ temp = tempi
 lrate = 1e-2
 
 #for n in range(nsteps):
-nsteps = 200
+nsteps = 20
 n=0
 nb = 0
 diff = 0
 
-while temp>tempf and (n<nsteps) and (-cost_b<.999):
+while temp>tempf and (n<nsteps):
   stime = time.time()
   Initials_n = Initials_c+step_size*jnp.array(np.random.rand(nvars+4*Nc)-0.5)
   cost_n = CostF_control_generate(Initials_n, jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, jnp_rho_f, jnp_theta_mat, jnp_l1_mat, l1max, ts, dt, tau, Nc, jnp_MMat, jnpId)
@@ -151,7 +152,7 @@ while temp>tempf and (n<nsteps) and (-cost_b<.999):
   #Initials = update_control2_l10(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId, lrate)
   #cost_b, J_b = CostF_control_l101(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId)
   n+=1
-  step_size = step_size/(1+0.001*step_size)  
+  step_size = step_size/(1+0.0001*step_size)  
   
   
 Initvals = np.array(Initials)
@@ -163,7 +164,7 @@ with h5py.File(fname, 'a') as f:
     dset1 = f.create_dataset("theta_t_sample", data = theta_t)
     dset2 = f.create_dataset("l1_t_sample", data = l1_t)
     dset3 = f.create_dataset("Initials_sample", data = Initvals)
- 
+
 fig, axs = plt.subplots(2,1,figsize=(4,6),sharex='all')
 axs[0].plot(ts, theta_t, linewidth =4, color = 'green')
 axs[1].plot(ts, l1_t, linewidth =4, color = 'green')
@@ -171,7 +172,7 @@ axs[0].set_ylabel(r'$\theta(t)$', fontsize =12)
 axs[1].set_ylabel(r'$\lambda_1(t)$',  fontsize =12)
 axs[1].set_xlabel(r'$t$', fontsize =12)
 plt.subplots_adjust(wspace=0.05, hspace=0.1)
-plt.savefig('/Users/t_karmakar/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Plots/sample_control_extmp.pdf',bbox_inches='tight')
+plt.savefig(script_dir+'/Plots/sample_control_extmp.pdf',bbox_inches='tight')
 
 '''
 Initvals = np.array(Initials)
@@ -261,7 +262,7 @@ axs[7].tick_params(labelsize=15)
 
 
 plt.subplots_adjust(wspace=0.1, hspace=0.1)
-#plt.savefig('/Users/t_karmakar/Library/CloudStorage/Box-Box/Research/Optimal_Path/Plots/control_l10_method2_tmp.pdf',bbox_inches='tight')
+#plt.savefig(script_dir+'/Plots/control_l10_method2_tmp.pdf',bbox_inches='tight')
 #plt.plot(ts, np.matmul(Fmat, cinits))
 #plt.plot(ts, jnp.matmul(Fmat, Coeffs))
 '''

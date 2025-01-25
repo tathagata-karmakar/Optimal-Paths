@@ -40,6 +40,8 @@ import collections
 from typing import Iterable
 from jaxopt import OptaxSolver
 import optax
+script_dir = os.path.dirname(__file__)
+
 
 #import torch
 #from torch import nn
@@ -52,7 +54,7 @@ import optax
 #torch.autograd.set_detect_anomaly(True)
 
 
-hf = h5py.File('/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Extmp.hdf5', 'r')
+hf = h5py.File(script_dir+'/Codes/Optimal-Paths/Data/Optimal_control_Extmp4.hdf5', 'r')
 
 nlevels = int(np.array(hf['nlevels']))
 a = destroy(nlevels)
@@ -72,6 +74,8 @@ X = (a+a.dag())/np.sqrt(2)
 P = (a-a.dag())/(np.sqrt(2)*1j)
 H = (X*X+P*P)/2.0
 X2 = X*X
+CXP =X*P+P*X
+P2 = P*P
 #Ljump = X
 #Mjump = P
 #rho_i = rho_i*rho_i.dag()
@@ -98,7 +102,7 @@ k020 = np.matmul(np_Idmat[9], Initvals)
 #rho_f_simul1, X_simul1, P_simul1, varX_simul1, covXP_simul1, varP_simul1, rop_strat,nbar, theta_t = OPsoln_control_l10(X, P, H, rho_i, alr, ali, A, B, Cv, k0r, k0i, Dvp, Dvm, ts,   tau, 1)
 #rho_f_simuld, X_simuld, P_simuld, varX_simuld, covXP_simuld, varP_simuld, rop_stratd,nbard = OPsoln_strat_SHO(X, P, H, rho_i, alr, ali, A, B, ts, theta_t,  tau, 1)# OPsoln_control_l10(X, P, H, rho_i, alr, ali, A, B, Cv, k0r, k0i, Dvp, Dvm, ts,   tau, 1)
 
-Q1j1, Q2j1, Q3j1, Q4j1, Q5j1, rho_f_simul2, rop_stratj = OP_wcontrol(Initvals, X.full(), P.full(), H.full(), X2.full(), rho_i.full(), l1_t, theta_t, ts, dt,  tau,  np_Idmat, np.identity(nlevels))
+Q1j1, Q2j1, Q3j1, Q4j1, Q5j1, rho_f_simul2, rop_stratj = OP_wcontrol(Initvals, X.full(), P.full(), H.full(), X2.full(), CXP.full(), P2.full(),  rho_i.full(), l1_t, theta_t, ts, dt,  tau,  np_Idmat, np.identity(nlevels))
 
 fig, axs = plt.subplots(4,2,figsize=(12,8),sharex='all')
 q1i = expect(X,rho_i)
@@ -162,7 +166,7 @@ axs[3,1].set_ylabel(r'$\lambda_1^\star$',fontsize=15)
 axs[3,1].tick_params(labelsize=14)
 
 plt.subplots_adjust(wspace=0.22, hspace=0.08)
-#plt.savefig('/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Plots/Cat.pdf',bbox_inches='tight')
+#plt.savefig(script_dir+'/Plots/Cat.pdf',bbox_inches='tight')
 
 hf.close()
 

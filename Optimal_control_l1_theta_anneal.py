@@ -40,6 +40,7 @@ import collections
 from typing import Iterable
 from jaxopt import OptaxSolver
 import optax
+script_dir = os.path.dirname(__file__)
 
 #import torch
 #from torch import nn
@@ -51,7 +52,7 @@ import optax
 ##torch.backends.cuda.cufft_plan_cache[0].max_size = 32
 #torch.autograd.set_detect_anomaly(True)
 
-nlevels = 25
+nlevels = 35
 
 #rho_f = coherent(nlevels, 0.5)
 a = destroy(nlevels)
@@ -70,8 +71,8 @@ rparam = snh2r+csh2r
 r_sq = np.log(rparam)/2
 xiR = r_sq*(q5f-q3f)/(2*snh2r)
 xiI = r_sq*(-q4f)/snh2r
-in_alr = 1.
-in_ali = 1.
+in_alr = 0.5
+in_ali = -.25
 fin_alr = 0.25#-0.1#in_alr*np.cos(t_f)+in_ali*np.sin(t_f)
 fin_ali = -0.75#0.5#in_ali*np.cos(t_f)-in_alr*np.sin(t_f)
 
@@ -79,11 +80,11 @@ fin_ali = -0.75#0.5#in_ali*np.cos(t_f)-in_alr*np.sin(t_f)
 Initial and final states
 '''
 eps =0.1
-#rho_i= coherent(nlevels, fin_alr+1j*fin_ali)+coherent(nlevels, -fin_alr-1j*fin_ali)#basis(nlevels, 0)#squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
-rho_i = (basis(nlevels, 0)-basis(nlevels,4))/np.sqrt(2)
-rho_f = (basis(nlevels, 0)+basis(nlevels,4))/np.sqrt(2)
-#rho_i=coherent(nlevels, in_alr+1j*in_ali)+coherent(nlevels, -in_alr-1j*in_ali)#(coherent(nlevels, in_alr+1j*in_ali)+coherent(nlevels, -in_alr-1j*in_ali))/np.sqrt(2)
-#rho_f = basis(nlevels, 0)#+coherent(nlevels, -in_alr-1j*in_ali))#coherent(nlevels, fin_alr+1j*fin_ali)
+rho_i= coherent(nlevels, fin_alr+1j*fin_ali)+coherent(nlevels, -fin_alr-1j*fin_ali)#basis(nlevels, 0)#squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
+#rho_i = (basis(nlevels, 0)-basis(nlevels,4))/np.sqrt(2)
+#rho_f = (basis(nlevels, 0)+basis(nlevels,4))/np.sqrt(2)
+#rho_i=coherent(nlevels, in_alr+1j*in_ali)#+coherent(nlevels, -in_alr-1j*in_ali)#(coherent(nlevels, in_alr+1j*in_ali)+coherent(nlevels, -in_alr-1j*in_ali))/np.sqrt(2)
+rho_f = basis(nlevels, 0)#+coherent(nlevels, -in_alr-1j*in_ali))#coherent(nlevels, fin_alr+1j*fin_ali)
 #rho_f = squeeze(nlevels,  xiR+1j*xiI)*coherent(nlevels, fin_alr+1j*fin_ali)
 #rho_f_int = squeeze(nlevels,  xiR*np.cos(2*t_f)-xiI*np.sin(2*t_f)+1j*(xiI*np.cos(2*t_f)+xiR*np.sin(2*t_f)))*coherent(nlevels, fin_alr*np.cos(t_f)-fin_ali*np.sin(t_f)+1j*(fin_ali*np.cos(t_f)+fin_alr*np.sin(t_f)))
 rho_1 = basis(nlevels, 0)
@@ -152,8 +153,9 @@ jnp_rho_i = jnp.array(rho_i.full())
 jnp_rho_f = jnp.array(rho_f.full())
 jnpX2= jnp.matmul(jnpX, jnpX)
 jnpP2= jnp.matmul(jnpP, jnpP)
+P2 = P*P
 
-cost_b = CostF_control_l101(Initials, jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, jnp_rho_f, l1max, ts, dt, tau, Idmat, jnpId)
+cost_b, rhotmp = CostF_control_l101(Initials, jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, jnp_rho_f, l1max, ts, dt, tau, Idmat, jnpId)
 Initials_c, cost_c = Initials, cost_b
 step_size = 1.0
 #temp = temp0
@@ -164,23 +166,24 @@ temp = tempi
 lrate = 1e-2
 
 #for n in range(nsteps):
-nsteps = 100
+nsteps = 5
 n=0
 nb = 0
 
-while temp>tempf and (n<nsteps) and (-cost_b<.999):
+while temp>tempf and (n<nsteps):
   stime = time.time()
   Initials_n = Initials_c+step_size*jnp.array(np.random.rand(10)-0.5)
-  cost_n = CostF_control_l101(Initials_n, jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, jnp_rho_f, l1max, ts, dt, tau, Idmat, jnpId)
+  cost_n, rhotmp = CostF_control_l101(Initials_n, jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, jnp_rho_f, l1max, ts, dt, tau, Idmat, jnpId)
   if (cost_n<cost_b):
       #if cost_n<=2.0 and  (J_n<=J_b):
           #Initials, cost_b, J_b = Initials_n, cost_n, J_n
       #elif cost_n>2.0:
+      #print(Initials_n-Initials)
       Initials, cost_b = Initials_n, cost_n
       nb = n
   #print (nb, n,  -cost_b, temp) #Cost is the negative of fidelity
   diff = cost_n-cost_c
-  metropolis = jnp.exp(-1000*diff/temp)
+  metropolis = jnp.exp(-100*diff/temp)
   if (diff<0) or (jnp.array(np.random.rand())<metropolis):
       Initials_c, cost_c = Initials_n, cost_n
       temp = temp/(1+0.02*temp)
@@ -189,23 +192,26 @@ while temp>tempf and (n<nsteps) and (-cost_b<.999):
   #Initials = update_control2_l10(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId, lrate)
   #cost_b, J_b = CostF_control_l101(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId)
   n+=1
-  step_size = step_size/(1+0.05*step_size)
+  step_size = step_size/(1+0.0001*step_size)
   #print (CostF_control_l101(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId))
   #Initials = update_control_l10(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId, lrate)
   #if (n>nsteps/4):
   #Initials = update_control2_l10(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId, lrate)
   #print (Initials)
-  print (nb, n,  -cost_b, temp, time.time()-stime)
-'''  
+  print (nb, n,  -cost_b, temp, metropolis)
+  
+'''
+lrate = 1e-1
 for n in range(nsteps):
   stime = time.time()
   #if (n%200==0):
-      #cost_n = CostF_control_l101(Initials, jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, jnp_rho_f, l1max, ts, dt, tau, Idmat, jnpId)
-     # print (cost_n)
+  cost_n = CostF_control_l101(Initials, jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, jnp_rho_f, l1max, ts, dt, tau, Idmat, jnpId)
+  print (cost_n)
   Initials = update_control_l101(Initials, jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, jnp_rho_f, l1max, ts, dt, tau, Idmat, jnpId, lrate)
   #Initials = update_control2_l10_2input(Initials,  jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, Fmat, ts, dt, tau, Ncos, MMat1, jnpId, lrate)
   print (n, time.time()-stime)
-''' 
+ '''
+  
 Initvals = np.array(Initials)
 #q3, q4, q5, alr, ali, A, B, q1t, q2t, rop_prxq = OP_PRXQ_Params(X, P, rho_i, rho_f, ts, tau)
 
@@ -222,14 +228,14 @@ k020 = np.matmul(np_Idmat[9], Initvals)
 #rho_f_simul1, X_simul1, P_simul1, varX_simul1, covXP_simul1, varP_simul1, rop_strat,nbar, theta_t = OPsoln_control_l10(X, P, H, rho_i, alr, ali, A, B, Cv, k0r, k0i, Dvp, Dvm, ts,   tau, 1)
 #rho_f_simuld, X_simuld, P_simuld, varX_simuld, covXP_simuld, varP_simuld, rop_stratd,nbard = OPsoln_strat_SHO(X, P, H, rho_i, alr, ali, A, B, ts, theta_t,  tau, 1)# OPsoln_control_l10(X, P, H, rho_i, alr, ali, A, B, Cv, k0r, k0i, Dvp, Dvm, ts,   tau, 1)
 
-Q1j, Q2j, Q3j, Q4j, Q5j, theta_tj, l1_tj, rho_f_simul2, rop_stratj, diff = OPintegrate_strat(Initvals, X.full(), P.full(), H.full(), X2.full(), rho_i.full(), l1max, ts, dt,  tau,  np_Idmat, np.identity(nlevels))
+Q1j, Q2j, Q3j, Q4j, Q5j, theta_tj, l1_tj, rho_f_simul2, rop_stratj, diff = OPintegrate_strat(Initvals, X.full(), P.full(), H.full(), X2.full(), CXP.full(), P2.full(), rho_i.full(), l1max, ts, dt,  tau,  np_Idmat, np.identity(nlevels))
 a = (X+1j*P)/np.sqrt(2)
 q1i = expect(X,rho_i)
 q1f = expect(X,rho_f)
 q2i = expect(P,rho_i)
 q2f = expect(P,rho_f)
 
-with h5py.File("/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Extmp.hdf5", "w") as f:
+with h5py.File(script_dir+"/Data/Optimal_control_Extmp.hdf5", "w") as f:
     dset1 = f.create_dataset("nlevels", data = nlevels, dtype ='int')
     dset2 = f.create_dataset("rho_i", data = rho_i.full())
     dset3 = f.create_dataset("rho_f_target", data = rho_f.full())
@@ -304,5 +310,5 @@ axs[5].tick_params(labelsize=15)
 axs[6].tick_params(labelsize=15)
 axs[7].tick_params(labelsize=15)
 plt.subplots_adjust(wspace=0.1, hspace=0.1)
-#plt.savefig('/Users/t_karmakar/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Plots/control_l10_method322.pdf',bbox_inches='tight')
+#plt.savefig(script_dir+'/Plots/control_l10_method322.pdf',bbox_inches='tight')
 #PlotOP(Initvals, X, P, H, rho_i, rho_f, ts, theta_t, tau, 'tmpfig_control')
