@@ -52,7 +52,7 @@ import optax
 #torch.autograd.set_detect_anomaly(True)
 
 
-hf = h5py.File('/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Ex15.hdf5', 'r')
+hf = h5py.File('/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Extmp.hdf5', 'r')
 
 nlevels = int(np.array(hf['nlevels']))
 a = destroy(nlevels)
@@ -100,7 +100,7 @@ k020 = np.matmul(np_Idmat[9], Initvals)
 
 Q1j1, Q2j1, Q3j1, Q4j1, Q5j1, rho_f_simul2, rop_stratj = OP_wcontrol(Initvals, X.full(), P.full(), H.full(), X2.full(), rho_i.full(), l1_t, theta_t, ts, dt,  tau,  np_Idmat, np.identity(nlevels))
 
-fig, axs = plt.subplots(4,2,figsize=(12,10),sharex='all')
+fig, axs = plt.subplots(4,2,figsize=(12,8),sharex='all')
 q1i = expect(X,rho_i)
 q1f = expect(X,rho_f)
 q2i = expect(P,rho_i)
@@ -114,26 +114,26 @@ q5f = expect(P2,rho_f)-q2f**2
 q4i = expect(cxp,rho_i)/2-q1i*q2i
 q4f = expect(cxp,rho_f)/2-q1f*q2f
 #axs[0].plot(ts, Q1j, linewidth =3, color='blue', label = 'w control')
-axs[0,0].plot(ts, Q1j1, linewidth =5, color='g', linestyle='-')
+axs[0,0].plot(ts, Q1j1, linewidth =3.5, color='g', linestyle='-')
 axs[0,0].set_ylabel(r'$\left\langle\hat{X}\right\rangle$',fontsize=15)
 axs[0,0].tick_params(labelsize=14)
 axs[0,0].plot(0, q1i, "o", color = 'b', markersize =12)
 axs[0,0].plot(ts[-1], q1f, "x", color = 'r', markersize =12)
 #axs[1].plot(ts, Q2j, linewidth =3, color='blue')
-axs[1,0].plot(ts, Q2j1, linewidth =5, color='g', linestyle='-')
+axs[1,0].plot(ts, Q2j1, linewidth =3.5, color='g', linestyle='-')
 axs[1,0].set_ylabel(r'$\left\langle\hat{P}\right\rangle$',fontsize=15)
 axs[1,0].tick_params(labelsize=14)
 axs[1,0].plot(0, q2i, "o", color = 'b', markersize =12)
 axs[1,0].plot(ts[-1], q2f, "x", color = 'r', markersize =12)
 
 #axs[2].plot(ts, Q3j, linewidth =3, color='blue')
-axs[2,0].plot(ts, Q3j1, linewidth =5, color='g', linestyle='-')
+axs[2,0].plot(ts, Q3j1, linewidth =3.5, color='g', linestyle='-')
 axs[2,0].set_ylabel(r'$\textrm{var}\hat{X}$',fontsize=15)
 axs[2,0].tick_params(labelsize=14)
 axs[2,0].plot(0, q3i, "o", color = 'b', markersize =12)
 axs[2,0].plot(ts[-1], q3f, "x", color = 'r', markersize =12)
 #axs[3].plot(ts, Q4j, linewidth =3, color='blue')
-axs[3,0].plot(ts, Q4j1, linewidth =5, color='g', linestyle='-')
+axs[3,0].plot(ts, Q4j1, linewidth =3.5, color='g', linestyle='-')
 axs[3,0].set_ylabel(r'$\textrm{cov}\left(\hat{X},\hat{P}\right)$',fontsize=15)
 axs[3,0].tick_params(labelsize=14)
 axs[3,0].plot(0, q4i, "o", color = 'b', markersize =12)
@@ -143,21 +143,21 @@ axs[3,0].xaxis.set_label_coords(1.1, -0.15)
 
 
 #axs[4].plot(ts, Q5j, linewidth =3, color='blue')
-axs[0,1].plot(ts, Q5j1, linewidth =5, color='g', linestyle='-')
+axs[0,1].plot(ts, Q5j1, linewidth =3.5, color='g', linestyle='-')
 axs[0,1].set_ylabel(r'$\textrm{var}\hat{P}$',fontsize=15)
 axs[0,1].tick_params(labelsize=14)
 axs[0,1].plot(0, q5i, "o", color = 'b', markersize =12)
 axs[0,1].plot(ts[-1], q5f, "x", color = 'r', markersize =12)
 #axs[5].plot(ts, rs,linewidth =3, color='blue')
-axs[1,1].plot(ts, rop_stratj,linewidth =5, color='g', linestyle='-')
+axs[1,1].plot(ts, rop_stratj,linewidth =3.5, color='g', linestyle='-')
 axs[1,1].set_ylabel(r'$r^\star$',fontsize=15)
 axs[1,1].tick_params(labelsize=14)
 
-axs[2,1].plot(ts, theta_t,linewidth =5, color='g', linestyle='--')
+axs[2,1].plot(ts, theta_t,linewidth =3.5, color='g', linestyle='--')
 axs[2,1].set_ylabel(r'$\theta^\star$',fontsize=15)
 axs[2,1].tick_params(labelsize=14)
 
-axs[3,1].plot(ts, l1_t, linewidth =5, color='g', linestyle='--')
+axs[3,1].plot(ts, l1_t, linewidth =3.5, color='g', linestyle='--')
 axs[3,1].set_ylabel(r'$\lambda_1^\star$',fontsize=15)
 axs[3,1].tick_params(labelsize=14)
 

@@ -81,6 +81,9 @@ jnpH = jnp.array(H.full())
 jnp_rho_i = jnp.array(rho_i.full())
 jnp_rho_f = jnp.array(rho_f.full())
 jnpX2= jnp.matmul(jnpX, jnpX)
+CXP = X*P+P*X
+jnpCXP = jnp.array(CXP.full())
+jnpP2= jnp.matmul(jnpP, jnpP)
 
 
 q1i = expect(X,rho_i)
@@ -99,25 +102,68 @@ jnp_l1_mat = jnp.array(l1_mat)
 jnp_MMat = jnp.array(MMat)
 lrate = 0.01
 
-nsteps =5000
 
+
+'''
 for n in range(nsteps):
   stime = time.time()
-  print (CostF_control_generate(Initials, jnpX, jnpP, jnpH, jnpX2, jnp_rho_i, jnp_rho_f, jnp_theta_mat, jnp_l1_mat, l1max, ts, dt, tau, Nc, jnp_MMat, jnpId))
-  Initials = update_control_generate(Initials, jnpX, jnpP, jnpH, jnpX2, jnp_rho_i, jnp_rho_f, jnp_theta_mat, jnp_l1_mat, l1max, ts, dt, tau, Nc, jnp_MMat, jnpId, nvars, lrate)
+  #if (n%200==0):
+  print (CostF_control_generate(Initials, jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, jnp_rho_f, jnp_theta_mat, jnp_l1_mat, l1max, ts, dt, tau, Nc, jnp_MMat, jnpId), time.time()-stime)
+  Initials = update_control_generate(Initials, jnpX, jnpP, jnpH, jnpX2,  jnpCXP, jnpP2, jnp_rho_i, jnp_rho_f, jnp_theta_mat, jnp_l1_mat, l1max, ts, dt, tau, Nc, jnp_MMat, jnpId, nvars, lrate)
   #Initials = update_control2_l10_2input(Initials,  jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, Fmat, ts, dt, tau, Ncos, MMat1, jnpId, lrate)
   print (n, time.time()-stime)
+'''  
+  
+cost_b = CostF_control_generate(Initials, jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, jnp_rho_f, jnp_theta_mat, jnp_l1_mat, l1max, ts, dt, tau, Nc, jnp_MMat, jnpId)
+Initials_c, cost_c = Initials, cost_b
+step_size = 0.1
+#temp = temp0
+metropolis = 1.0
+tempf = 0.005
+tempi = 2000.0
+temp = tempi
+lrate = 1e-2
+
+#for n in range(nsteps):
+nsteps = 200
+n=0
+nb = 0
+diff = 0
+
+while temp>tempf and (n<nsteps) and (-cost_b<.999):
+  stime = time.time()
+  Initials_n = Initials_c+step_size*jnp.array(np.random.rand(nvars+4*Nc)-0.5)
+  cost_n = CostF_control_generate(Initials_n, jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, jnp_rho_f, jnp_theta_mat, jnp_l1_mat, l1max, ts, dt, tau, Nc, jnp_MMat, jnpId)
+  if (cost_n<cost_b):
+      #if cost_n<=2.0 and  (J_n<=J_b):
+          #Initials, cost_b, J_b = Initials_n, cost_n, J_n
+      #elif cost_n>2.0:
+      Initials, cost_b = Initials_n, cost_n
+      nb = n
+  print (nb, n,  -cost_b, diff, metropolis, temp) #Cost is the negative of fidelity
+  diff = cost_n-cost_c
+  metropolis = jnp.exp(-1000*diff/temp)
+  if (diff<0) or (jnp.array(np.random.rand())<metropolis):
+      Initials_c, cost_c = Initials_n, cost_n
+      temp = temp/(1+0.02*temp)
+  else:
+      temp = temp/(1-0.0002*temp)    
+  #Initials = update_control2_l10(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId, lrate)
+  #cost_b, J_b = CostF_control_l101(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId)
+  n+=1
+  step_size = step_size/(1+0.001*step_size)  
   
   
 Initvals = np.array(Initials)
 theta_t = (np.pi/2.0)*jnp.tanh(2*jnp.matmul(theta_mat,Initvals)/np.pi)
 l1_t = (l1max)*jnp.tanh(jnp.matmul(l1_mat,Initials)/l1max)
 
+
 with h5py.File(fname, 'a') as f:
     dset1 = f.create_dataset("theta_t_sample", data = theta_t)
     dset2 = f.create_dataset("l1_t_sample", data = l1_t)
     dset3 = f.create_dataset("Initials_sample", data = Initvals)
-  
+ 
 fig, axs = plt.subplots(2,1,figsize=(4,6),sharex='all')
 axs[0].plot(ts, theta_t, linewidth =4, color = 'green')
 axs[1].plot(ts, l1_t, linewidth =4, color = 'green')

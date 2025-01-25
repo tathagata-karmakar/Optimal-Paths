@@ -52,7 +52,7 @@ import optax
 #torch.autograd.set_detect_anomaly(True)
 
 
-hf = h5py.File('/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Ex15.hdf5', 'r')
+hf = h5py.File('/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Extmp.hdf5', 'r')
 
 nlevels = int(np.array(hf['nlevels']))
 a = destroy(nlevels)
@@ -87,9 +87,12 @@ jnpH = jnp.array(H.full())
 jnp_rho_i = jnp.array(rho_i.full())
 jnp_rho_f = jnp.array(rho_f.full())
 jnpX2= jnp.matmul(jnpX, jnpX)
+CXP = X*P+P*X
+jnpCXP = jnp.array(CXP.full())
+jnpP2= jnp.matmul(jnpP, jnpP)
 
 
-samplesize =10000
+samplesize =100
 
 fidelities0 = np.zeros(samplesize)
 fidelities_OP = np.zeros(samplesize)
@@ -98,11 +101,11 @@ for nsample in range(samplesize):
     print (nsample)
     #Q1j, Q2j, Q3j, Q4j, Q5j, rho_f_simul, rs= OP_stochastic_trajectory(X.full(), P.full(), H.full(), X2.full(), rho_i.full(), l10, theta0, ts, dt,  tau,  np.identity(nlevels))
     dWt = np.random.normal(scale=np.sqrt(dt), size = len(theta_t))
-    rho_f_simul0 = OP_stochastic_trajectory_JAX(jnpX, jnpP, jnpH, jnpX2, jnp_rho_i, l10, theta0, dWt, ts, dt,  tau,  jnpId)
+    rho_f_simul0 = OP_stochastic_trajectory_JAX(jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, l10, theta0, dWt, ts, dt,  tau,  jnpId)
     fidelities0[nsample] = Fidelity_PS(rho_f_simul0, jnp_rho_f).item()
     
     dWt = np.random.normal(scale=np.sqrt(dt), size = len(theta_t))
-    rho_f_simul = OP_stochastic_trajectory_JAX(jnpX, jnpP, jnpH, jnpX2, jnp_rho_i, l1_t, theta_t, dWt, ts, dt,  tau,  jnpId)
+    rho_f_simul = OP_stochastic_trajectory_JAX(jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, l1_t, theta_t, dWt, ts, dt,  tau,  jnpId)
     fidelities_OP[nsample] = Fidelity_PS(rho_f_simul, jnp_rho_f).item()
     #print (fidelities0[nsample])
 print ('End time', time.time()-stime)

@@ -52,7 +52,7 @@ import optax
 #torch.autograd.set_detect_anomaly(True)
 
 
-hf = h5py.File('/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Ex9.hdf5', 'r')
+hf = h5py.File('/Users/tatha_k/Library/CloudStorage/Box-Box/Research/Optimal_Path/Codes/Optimal-Paths/Data/Optimal_control_Extmp.hdf5', 'r')
 
 nlevels = int(np.array(hf['nlevels']))
 a = destroy(nlevels)
@@ -74,6 +74,8 @@ X = (a+a.dag())/np.sqrt(2)
 P = (a-a.dag())/(np.sqrt(2)*1j)
 H = (X*X+P*P)/2.0
 X2 = X*X
+CXP = X*P+P*X
+P2 = P*P
 #Ljump = X
 #Mjump = P
 #rho_i = rho_i*rho_i.dag()
@@ -86,8 +88,9 @@ jnp_rho_i = jnp.array(rho_i.full())
 jnp_rho_f = jnp.array(rho_f.full())
 jnpX2= jnp.matmul(jnpX, jnpX)
 
-Q1j, Q2j, Q3j, Q4j, Q5j, rho_f_simul, rs= OP_stochastic_trajectory(X.full(), P.full(), H.full(), X2.full(), rho_i.full(), l1_t, theta_t, ts, dt,  tau,  np.identity(nlevels))
-Q1j1, Q2j1, Q3j1, Q4j1, Q5j1, rho_f_simul2, rop_stratj = OP_wcontrol(Initvals, X.full(), P.full(), H.full(), X2.full(), rho_i.full(), l1_t, theta_t, ts, dt,  tau,  np_Idmat, np.identity(nlevels))
+
+Q1j, Q2j, Q3j, Q4j, Q5j, rho_f_simul, rs= OP_stochastic_trajectory(X.full(), P.full(), H.full(), X2.full(), CXP.full(), P2.full(), rho_i.full(), l1_t, theta_t, ts, dt,  tau,  np.identity(nlevels))
+Q1j1, Q2j1, Q3j1, Q4j1, Q5j1, rho_f_simul2, rop_stratj = OP_wcontrol(Initvals, X.full(), P.full(), H.full(), X2.full(), CXP.full(), P2.full(), rho_i.full(), l1_t, theta_t, ts, dt,  tau,  np_Idmat, np.identity(nlevels))
 
 fig, axs = plt.subplots(6,1,figsize=(6,14),sharex='all')
 axs[0].tick_params(labelsize=14)
