@@ -13,7 +13,7 @@ import matplotlib as mpl
 import numpy as np
 import math
 import scipy
-from scipy.integrate import simps as intg
+from scipy.integrate import simpson as intg
 #from google.colab import files
 #from google.colab import drive
 from matplotlib import rc
@@ -53,7 +53,7 @@ import optax
 #torch.autograd.set_detect_anomaly(True)
 
 
-hf = h5py.File(script_dir+'/Data/Optimal_control_Extmp.hdf5', 'r')
+hf = h5py.File(script_dir+'/Data/Optimal_control_Extmp1.hdf5', 'r')
 
 nlevels = int(np.array(hf['nlevels']))
 a = destroy(nlevels)
@@ -93,34 +93,36 @@ jnpCXP = jnp.array(CXP.full())
 jnpP2= jnp.matmul(jnpP, jnpP)
 
 
-samplesize =10
+samplesize =1000
 
-fidelities0 = np.zeros(samplesize)
-fidelities_OP = np.zeros(samplesize)
+fidelitiesC = np.zeros(samplesize)
+fidelities_OC = np.zeros(samplesize)
 stime = time.time()
 for nsample in range(samplesize):
     print (nsample)
     #Q1j, Q2j, Q3j, Q4j, Q5j, rho_f_simul, rs= OP_stochastic_trajectory(X.full(), P.full(), H.full(), X2.full(), rho_i.full(), l10, theta0, ts, dt,  tau,  np.identity(nlevels))
     dWt = np.random.normal(scale=np.sqrt(dt), size = len(theta_t))
     rho_f_simul0 = OP_stochastic_trajectory_JAX(jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, l10, theta0, dWt, ts, dt,  tau,  jnpId)
-    fidelities0[nsample] = Fidelity_PS(rho_f_simul0, jnp_rho_f).item()
+    fidelitiesC[nsample] = Fidelity_PS(rho_f_simul0, jnp_rho_f).item()
     
     dWt = np.random.normal(scale=np.sqrt(dt), size = len(theta_t))
     rho_f_simul = OP_stochastic_trajectory_JAX(jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, l1_t, theta_t, dWt, ts, dt,  tau,  jnpId)
-    fidelities_OP[nsample] = Fidelity_PS(rho_f_simul, jnp_rho_f).item()
+    fidelities_OC[nsample] = Fidelity_PS(rho_f_simul, jnp_rho_f).item()
+    #print (fidelities0[nsample])
+    
+#for nsample in range(samplesize):
+   # print (nsample)
+    #dWt = np.random.normal(scale=np.sqrt(dt), size = len(theta_t))
+   # rho_f_simul = OP_stochastic_trajectory_JAX(jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, l1_t, theta_t, dWt, ts, dt,  tau,  jnpId)
+    #fidelities_OC[nsample] = Fidelity_PS(rho_f_simul, jnp_rho_f).item()
     #print (fidelities0[nsample])
 print ('End time', time.time()-stime)
     
-fig, ax = plt.subplots()
-
-ax.hist(fidelities0)
-ax.hist(fidelities_OP)
-ax.set_xlabel(r'$\mathcal{F}\left(\hat{\rho}_f,\hat{\rho}(t_f)\right)$')
 
 hf.close()
 
 
-with h5py.File(script_dir+"Data/Histogram_Extmp.hdf5", "w") as f:
+with h5py.File(script_dir+"/Data/Histogram_Extmp1.hdf5", "w") as f:
     dset1 = f.create_dataset("nlevels", data = nlevels, dtype ='int')
     dset2 = f.create_dataset("rho_i", data = rho_i.full())
     dset3 = f.create_dataset("rho_f_target", data = rho_f.full())
@@ -128,9 +130,15 @@ with h5py.File(script_dir+"Data/Histogram_Extmp.hdf5", "w") as f:
     dset5 = f.create_dataset("tau", data = tau)
     dset6 = f.create_dataset("theta_t", data = theta_t)
     dset7 = f.create_dataset("l1_t", data = l1_t)
-    dset8 = f.create_dataset("Fidelities_wo_control", data = fidelities0)
-    dset9 = f.create_dataset("Fidelities_w_control", data = fidelities_OP)
+    dset8 = f.create_dataset("Fidelities_wo_control", data = fidelitiesC)
+    dset9 = f.create_dataset("Fidelities_w_control", data = fidelities_OC)
     dset10 = f.create_dataset("Initvals", data = Initvals)   
     dset11 = f.create_dataset("Sample_size", data = samplesize)   
     
 f.close()
+
+fig, ax = plt.subplots()
+
+ax.hist(fidelitiesC)
+ax.hist(fidelities_OC)
+ax.set_xlabel(r'$\mathcal{F}\left(\hat{\rho}_f,\hat{\rho}(t_f)\right)$')

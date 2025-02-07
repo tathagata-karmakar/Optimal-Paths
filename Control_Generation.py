@@ -13,7 +13,7 @@ import matplotlib as mpl
 import numpy as np
 import math
 import scipy
-from scipy.integrate import simps as intg
+from scipy.integrate import simpson as intg
 #from google.colab import files
 #from google.colab import drive
 from matplotlib import rc
@@ -44,7 +44,7 @@ import optax
 script_dir = os.path.dirname(__file__)
 
 
-fname  = script_dir+'/Data/Optimal_control_Extmp.hdf5'
+fname  = script_dir+'/Data/Optimal_control_Extmp1.hdf5'
 hf = h5py.File(fname, 'r')
 l1max = 0.2
 nlevels = int(np.array(hf['nlevels']))
@@ -126,7 +126,7 @@ temp = tempi
 lrate = 1e-2
 
 #for n in range(nsteps):
-nsteps = 20
+nsteps = 2000
 n=0
 nb = 0
 diff = 0

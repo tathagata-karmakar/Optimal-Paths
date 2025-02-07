@@ -54,7 +54,7 @@ import optax
 #torch.autograd.set_detect_anomaly(True)
 
 
-hf = h5py.File(script_dir+'/Codes/Optimal-Paths/Data/Optimal_control_Extmp2.hdf5', 'r')
+hf = h5py.File(script_dir+'/Data/CatState_Ex2.hdf5', 'r')
 
 nlevels = int(np.array(hf['nlevels']))
 a = destroy(nlevels)
@@ -90,6 +90,6 @@ axs[1].set_ylabel(r'$\lambda_1(t)$',fontsize=15)
 axs[1].set_xlabel(r'$t$',fontsize=15)
 plt.subplots_adjust(wspace=0.22, hspace=0.08)
 
-plt.savefig(script_dir+'/Codes/Optimal-Paths/Plots/sample_control_tmp.pdf',bbox_inches='tight')
+#plt.savefig(script_dir+'/Codes/Optimal-Paths/Plots/sample_control_catstate.pdf',bbox_inches='tight')
 
 

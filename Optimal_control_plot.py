@@ -54,7 +54,7 @@ script_dir = os.path.dirname(__file__)
 #torch.autograd.set_detect_anomaly(True)
 
 
-hf = h5py.File(script_dir+'/Codes/Optimal-Paths/Data/Optimal_control_Extmp4.hdf5', 'r')
+hf = h5py.File(script_dir+'/Data/CatState_Ex2.hdf5', 'r')
 
 nlevels = int(np.array(hf['nlevels']))
 a = destroy(nlevels)
@@ -166,7 +166,7 @@ axs[3,1].set_ylabel(r'$\lambda_1^\star$',fontsize=15)
 axs[3,1].tick_params(labelsize=14)
 
 plt.subplots_adjust(wspace=0.22, hspace=0.08)
-#plt.savefig(script_dir+'/Plots/Cat.pdf',bbox_inches='tight')
+#plt.savefig(script_dir+'/Plots/Cat_State_OC.pdf',bbox_inches='tight')
 
 hf.close()
 

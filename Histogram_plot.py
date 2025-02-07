@@ -54,7 +54,7 @@ import optax
 #torch.autograd.set_detect_anomaly(True)
 
 
-hf = h5py.File(script_dir+'/Data/Histogram_Ex16.hdf5', 'r')
+hf = h5py.File(script_dir+'/Data/Histogram_Extmp.hdf5', 'r')
 
 nlevels = int(np.array(hf['nlevels']))
 #a = destroy(nlevels)
