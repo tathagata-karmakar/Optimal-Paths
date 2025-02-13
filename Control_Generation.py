@@ -44,7 +44,7 @@ import optax
 script_dir = os.path.dirname(__file__)
 
 
-fname  = script_dir+'/Data/Optimal_control_Extmp1.hdf5'
+fname  = script_dir+'/Data/Optimal_control_Extmp3.hdf5'
 hf = h5py.File(fname, 'r')
 l1max = 0.2
 nlevels = int(np.array(hf['nlevels']))
@@ -115,9 +115,9 @@ for n in range(nsteps):
   print (n, time.time()-stime)
 '''  
   
-cost_b = CostF_control_generate(Initials, jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, jnp_rho_f, jnp_theta_mat, jnp_l1_mat, l1max, ts, dt, tau, Nc, jnp_MMat, jnpId)
+cost_b, rho_f_simul = CostF_control_generate(Initials, jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, jnp_rho_f, jnp_theta_mat, jnp_l1_mat, l1max, ts, dt, tau, Nc, jnp_MMat, jnpId)
 Initials_c, cost_c = Initials, cost_b
-step_size = 0.1
+step_size = 1.0
 #temp = temp0
 metropolis = 1.0
 tempf = 0.005
@@ -134,12 +134,12 @@ diff = 0
 while temp>tempf and (n<nsteps):
   stime = time.time()
   Initials_n = Initials_c+step_size*jnp.array(np.random.rand(nvars+4*Nc)-0.5)
-  cost_n = CostF_control_generate(Initials_n, jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, jnp_rho_f, jnp_theta_mat, jnp_l1_mat, l1max, ts, dt, tau, Nc, jnp_MMat, jnpId)
+  cost_n, rho_n = CostF_control_generate(Initials_n, jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, jnp_rho_f, jnp_theta_mat, jnp_l1_mat, l1max, ts, dt, tau, Nc, jnp_MMat, jnpId)
   if (cost_n<cost_b):
       #if cost_n<=2.0 and  (J_n<=J_b):
           #Initials, cost_b, J_b = Initials_n, cost_n, J_n
       #elif cost_n>2.0:
-      Initials, cost_b = Initials_n, cost_n
+      Initials, cost_b, rho_f_simul = Initials_n, cost_n, rho_n
       nb = n
   print (nb, n,  -cost_b, diff, metropolis, temp) #Cost is the negative of fidelity
   diff = cost_n-cost_c

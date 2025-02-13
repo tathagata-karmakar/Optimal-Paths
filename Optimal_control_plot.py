@@ -13,7 +13,7 @@ import matplotlib as mpl
 import numpy as np
 import math
 import scipy
-from scipy.integrate import simps as intg
+from scipy.integrate import simpson as intg
 #from google.colab import files
 #from google.colab import drive
 from matplotlib import rc
@@ -54,7 +54,7 @@ script_dir = os.path.dirname(__file__)
 #torch.autograd.set_detect_anomaly(True)
 
 
-hf = h5py.File(script_dir+'/Data/CatState_Ex2.hdf5', 'r')
+hf = h5py.File(script_dir+'/Data/Optimal_control_Extmp2.hdf5', 'r')
 
 nlevels = int(np.array(hf['nlevels']))
 a = destroy(nlevels)

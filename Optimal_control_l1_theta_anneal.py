@@ -7,6 +7,7 @@ Created on Tue Aug 13 08:55:01 2024
 """
 
 import os,sys
+os.environ['JAX_PLATFORMS'] = 'cpu'
 import time
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -58,7 +59,7 @@ nlevels = 35
 a = destroy(nlevels)
 t_i = 0
 t_f = 5.0
-ts = np.linspace(t_i, t_f, int(t_f/0.0001))
+ts = np.linspace(t_i, t_f, int(t_f/0.00005))
 dt = ts[1]-ts[0]
 tau = 15.0
 q4f = np.sqrt(1+4*tau*tau)-2*tau
@@ -159,7 +160,7 @@ P2 = P*P
 
 cost_b, rhotmp = CostF_control_l101(Initials, jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, jnp_rho_f, l1max, ts, dt, tau, Idmat, jnpId)
 Initials_c, cost_c = Initials, cost_b
-step_size = 1.0
+step_size = 0.1
 #temp = temp0
 metropolis = 1.0
 tempf = 0.005
@@ -168,12 +169,12 @@ temp = tempi
 lrate = 1e-2
 
 #for n in range(nsteps):
-nsteps = 2000
+nsteps = 5
 n=0
 nb = 0
-
+stime = time.time()
 while temp>tempf and (n<nsteps):
-  stime = time.time()
+  #stime = time.time()
   Initials_n = Initials_c+step_size*jnp.array(np.random.rand(10)-0.5)
   cost_n, rhotmp = CostF_control_l101(Initials_n, jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, jnp_rho_f, l1max, ts, dt, tau, Idmat, jnpId)
   if (cost_n<cost_b):
@@ -202,6 +203,7 @@ while temp>tempf and (n<nsteps):
   #print (Initials)
   print (nb, n,  -cost_b, temp, metropolis)
   
+print(time.time()-stime)
 '''
 lrate = 1e-1
 for n in range(nsteps):
@@ -237,7 +239,7 @@ q1f = expect(X,rho_f)
 q2i = expect(P,rho_i)
 q2f = expect(P,rho_f)
 
-with h5py.File(script_dir+"/Data/Optimal_control_Extmp1.hdf5", "w") as f:
+with h5py.File(script_dir+"/Data/Optimal_control_Extmp4.hdf5", "w") as f:
     dset1 = f.create_dataset("nlevels", data = nlevels, dtype ='int')
     dset2 = f.create_dataset("rho_i", data = rho_i.full())
     dset3 = f.create_dataset("rho_f_target", data = rho_f.full())

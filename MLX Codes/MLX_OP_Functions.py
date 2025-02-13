@@ -7,7 +7,7 @@ Created on Fri Feb  9 10:16:27 2024
 """
 
 import os,sys
-os.environ['JAX_PLATFORMS'] = 'cpu'
+#os.environ['JAX_PLATFORMS'] = 'cpu'
 import time
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -515,8 +515,8 @@ def OPintegrate_strat(Initials, X, P, H, X2, CXP, P2, rho_i, l1max, ts, dt,  tau
       H1 = H+l1*X2
       #Fac1 = r*Ljump/(2*tau)#-Ljump2/(4*tau)
       Fac2 = Id-dt*(X2*csth**2+csth*snth*CXP+P2*snth**2)/(4*tau)+dt*r*(csth*X+snth*P)/(2*tau)
-      rho1 = np.matmul(np.matmul(Fac2-dt*1j*H1,rho),Fac2+dt*1j*H1)
-      tmptr = np.trace(rho1)
+      rho1 = jnp.matmul(jnp.matmul(Fac2-dt*1j*H1,rho),Fac2+dt*1j*H1)
+      tmptr = jnp.trace(rho1)
       rho = rho1/tmptr
       
       G10, G01, k10, k01, G20, G11, G02, k20, k11, k02 = G_k_updates(G10, G01, k10, k01, G20, G11, G02, k20, k11, k02, csth, snth, r, dt, tau, l1)

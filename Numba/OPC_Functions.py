@@ -13,7 +13,7 @@ import matplotlib as mpl
 import numpy as np
 import math
 import scipy
-from scipy.integrate import simps as intg
+from scipy.integrate import simpson as intg
 #from google.colab import files
 #from google.colab import drive
 from matplotlib import rc

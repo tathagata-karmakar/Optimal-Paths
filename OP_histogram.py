@@ -53,7 +53,7 @@ import optax
 #torch.autograd.set_detect_anomaly(True)
 
 
-hf = h5py.File(script_dir+'/Data/Optimal_control_Extmp1.hdf5', 'r')
+hf = h5py.File(script_dir+'/Data/Optimal_control_Extmp2.hdf5', 'r')
 
 nlevels = int(np.array(hf['nlevels']))
 a = destroy(nlevels)
@@ -122,7 +122,7 @@ print ('End time', time.time()-stime)
 hf.close()
 
 
-with h5py.File(script_dir+"/Data/Histogram_Extmp1.hdf5", "w") as f:
+with h5py.File(script_dir+"/Data/Histogram_Extmp2.hdf5", "w") as f:
     dset1 = f.create_dataset("nlevels", data = nlevels, dtype ='int')
     dset2 = f.create_dataset("rho_i", data = rho_i.full())
     dset3 = f.create_dataset("rho_f_target", data = rho_f.full())
