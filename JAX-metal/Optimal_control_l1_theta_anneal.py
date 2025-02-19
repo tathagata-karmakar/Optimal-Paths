@@ -61,7 +61,7 @@ nlevels = 25
 #rho_f = coherent(nlevels, 0.5)
 a = destroy(nlevels)
 t_i = 0
-t_f = 3.0
+t_f = 5.0
 ts = np.linspace(t_i, t_f, int(t_f/0.0001))
 dt = ts[1]-ts[0]
 tau = 15.0
@@ -78,15 +78,15 @@ xiI = r_sq*(-q4f)/snh2r
 fin_alr = 1.25
 fin_ali = -0.75
 in_alr = 0.25#-0.1#in_alr*np.cos(t_f)+in_ali*np.sin(t_f)
-in_ali = -1.75#0.5#in_ali*np.cos(t_f)-in_alr*np.sin(t_f)
+in_ali = -0.75#0.5#in_ali*np.cos(t_f)-in_alr*np.sin(t_f)
 
 '''
 Initial and final states
 '''
 eps =0.1
-rho_f= coherent(nlevels, fin_alr+1j*fin_ali)+coherent(nlevels, -fin_alr-1j*fin_ali)#basis(nlevels, 0)#squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
+#rho_f= coherent(nlevels, fin_alr+1j*fin_ali)+coherent(nlevels, -fin_alr-1j*fin_ali)#basis(nlevels, 0)#squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
 #rho_i = (basis(nlevels, 0)+basis(nlevels,4))/np.sqrt(2)
-#rho_f = (basis(nlevels, 0)+basis(nlevels,4))/np.sqrt(2)
+rho_f = basis(nlevels, 0)#+basis(nlevels,4))/np.sqrt(2)
 #rho_f = (basis(nlevels, 0)+basis(nlevels,4))/np.sqrt(2)
 #rho_i = (basis(nlevels, 0)+np.sqrt(3)*basis(nlevels,4))/np.sqrt(4)
 rho_i=coherent(nlevels, in_alr+1j*in_ali)+coherent(nlevels, -in_alr-1j*in_ali)#(coherent(nlevels, in_alr+1j*in_ali)+coherent(nlevels, -in_alr-1j*in_ali))/np.sqrt(2)
@@ -173,7 +173,7 @@ Ops = (jnpXr, jnpXi, jnpPr, jnpPi,  jnpHr, jnpHi, jnpX2r, jnpX2i, jnpCXPr, jnpCX
 params = (l1max, ts, dt, tau, Idmat)
 cost_b, rhotmpr, rhotmpi = CostF_control_l101(Initials, Ops , jnp_rho_ir, jnp_rho_ii, jnp_rho_fr, jnp_rho_fi, params)
 Initials_c, cost_c = Initials, cost_b
-step_size = 0.1
+step_size = 0.5
 #temp = temp0
 metropolis = 1.0
 tempf = 0.005
@@ -182,7 +182,7 @@ temp = tempi
 lrate = 1e-2
 
 #for n in range(nsteps):
-nsteps = 200
+nsteps = 2000
 n=0
 nb = 0
 stime = time.time()
@@ -222,25 +222,9 @@ print ('TT: ', time.time()-stime)
 
 
 Initvals = np.array(Initials)
-#q3, q4, q5, alr, ali, A, B, q1t, q2t, rop_prxq = OP_PRXQ_Params(X, P, rho_i, rho_f, ts, tau)
-
-G100 = np.matmul(np_Idmat[0], Initvals)
-G010 = np.matmul(np_Idmat[1], Initvals)
-k100 = np.matmul(np_Idmat[2], Initvals)
-k010 = np.matmul(np_Idmat[3], Initvals)
-G200 = np.matmul(np_Idmat[4], Initvals)
-G110 = np.matmul(np_Idmat[5], Initvals)
-G020 = np.matmul(np_Idmat[6], Initvals)
-k200 = np.matmul(np_Idmat[7], Initvals)
-k110 = np.matmul(np_Idmat[8], Initvals)
-k020 = np.matmul(np_Idmat[9], Initvals)
-#rho_f_simul1, X_simul1, P_simul1, varX_simul1, covXP_simul1, varP_simul1, rop_strat,nbar, theta_t = OPsoln_control_l10(X, P, H, rho_i, alr, ali, A, B, Cv, k0r, k0i, Dvp, Dvm, ts,   tau, 1)
-#rho_f_simuld, X_simuld, P_simuld, varX_simuld, covXP_simuld, varP_simuld, rop_stratd,nbard = OPsoln_strat_SHO(X, P, H, rho_i, alr, ali, A, B, ts, theta_t,  tau, 1)# OPsoln_control_l10(X, P, H, rho_i, alr, ali, A, B, Cv, k0r, k0i, Dvp, Dvm, ts,   tau, 1)
-
-
 
 stime  = time.time()
-Q1j, Q2j, Q3j, Q4j, Q5j, theta_tj, l1_tj, rho_f_simul2r, rho_f_simul2i, rop_stratj, diff = OPintegrate_strat(Initvals, Ops, jnp_rho_ir, jnp_rho_ii, params)
+Q1j, Q2j, Q3j, Q4j, Q5j, theta_tj, l1_tj, rho_f_simul2r, rho_f_simul2i, rop_stratj, diff = OPintegrate_strat(jnp.array(Initvals), Ops, jnp_rho_ir, jnp_rho_ii, params)
 print (time.time()-stime)
 
 a = (X+1j*P)/np.sqrt(2)
@@ -249,7 +233,7 @@ q1f = expect(X,rho_f)
 q2i = expect(P,rho_i)
 q2f = expect(P,rho_f)
 
-with h5py.File(script_dir+"/Optimal_control_Extmp.hdf5", "w") as f:
+with h5py.File(script_dir+"/Optimal_control_Extmp1.hdf5", "w") as f:
     dset1 = f.create_dataset("nlevels", data = nlevels, dtype ='int')
     dset2 = f.create_dataset("rho_i", data = rho_i.full())
     dset3 = f.create_dataset("rho_f_target", data = rho_f.full())

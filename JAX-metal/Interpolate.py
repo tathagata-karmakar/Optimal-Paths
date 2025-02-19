@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sun Dec  8 11:22:59 2024
+Created on Thu Feb 13 12:48:24 2025
 
 @author: tatha_k
 """
@@ -20,13 +20,11 @@ from matplotlib import rc
 from pylab import rcParams
 from matplotlib import colors
 from qutip import *
-from OP_Functions import *
+from Eff_OP_Functions import *
 import h5py
 os.environ["PATH"] += os.pathsep + '/Library/TeX/texbin'
 rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
 rc('text',usetex=True)
-script_dir = os.path.dirname(__file__)
-
 
 import jax
 import jax.numpy as jnp
@@ -42,6 +40,8 @@ import collections
 from typing import Iterable
 from jaxopt import OptaxSolver
 import optax
+script_dir = os.path.dirname(__file__)
+
 
 #import torch
 #from torch import nn
@@ -54,39 +54,38 @@ import optax
 #torch.autograd.set_detect_anomaly(True)
 
 
-hf = h5py.File(script_dir+'/Data/Histogram_Extmp1.hdf5', 'r')
+hf = h5py.File(script_dir+'/Optimal_control_Extmp.hdf5', 'r')
 
 nlevels = int(np.array(hf['nlevels']))
-#a = destroy(nlevels)
+a = destroy(nlevels)
 tau = np.array(hf['tau']).item()
+l1max = np.array(hf['l1max']).item()
 theta_t = np.array(hf['theta_t'])
-theta0 = np.zeros(len(theta_t))  #Control parameter \theta = 0
 l1_t = np.array(hf['l1_t'])
-l10 = np.zeros(len(l1_t))   #Control parameter \lambda_1 = 0
 ts = np.array(hf['ts'])
-#ropt = np.array(hf['r_t'])
+ropt = np.array(hf['r_t'])
 rho_i =Qobj(np.array(hf['rho_i']))
 rho_f = Qobj(np.array(hf['rho_f_target']))
 Initvals = np.array(hf['Initvals'])
-
 dt = ts[1]-ts[0]
-samplesize =np.array(hf['Sample_size']).item()
-fidelities0 = np.array(hf['Fidelities_wo_control'])
-fidelities_OP = np.array(hf['Fidelities_w_control'])
-#np_Idmat=np.identity(10)
-#Idmat = jnp.array(np_Idmat)
-
-
-fig, ax = plt.subplots(figsize=(6,4))
-
-
-ax.hist(fidelities_OP, label = 'Optimal control', hatch ='|')
-ax.hist(fidelities0, label="Sample control", alpha = 0.6, hatch ='\\')
-ax.set_xlabel(r'$\mathcal{F}\left(\hat{\rho}_f,\hat{\rho}(t_f)\right)$', fontsize=18)
-ax.set_ylabel('Number of Trajectories', fontsize=18)
-ax.tick_params(labelsize=15)
-ax.legend(loc=2,fontsize=15)
-ax.set_xlim(0,1)
-#plt.savefig(script_dir+'/Plots/histogram_catstate.pdf',bbox_inches='tight')
-
+np_Idmat=np.identity(10)
+Idmat = jnp.array(np_Idmat)
 hf.close()
+
+tsi = np.linspace(ts[0], ts[-1], 5*len(ts))
+l1_ti = np.interp(tsi, ts, l1_t)
+theta_ti = np.interp(tsi, ts, theta_t)
+
+fig, axs = plt.subplots(2,1,figsize=(10,8),sharex='all')
+
+axs[0].plot(ts, l1_t, linewidth =3.5, color='g', linestyle='-')
+axs[0].plot(tsi, l1_ti, linewidth =3.5, color='r', linestyle='--')
+axs[0].set_ylabel(r'$\lambda_1(t)$',fontsize=15)
+axs[0].tick_params(labelsize=14)
+
+#axs[1].plot(ts, Q2j, linewidth =3, color='blue')
+axs[1].plot(ts, theta_t, linewidth =3.5, color='g', linestyle='-')
+axs[1].plot(tsi, theta_ti, linewidth =3.5, color='r', linestyle='--')
+axs[1].set_ylabel(r'$\theta(t)$',fontsize=15)
+axs[1].set_xlabel(r'$t$',fontsize=15)
+axs[1].tick_params(labelsize=14)

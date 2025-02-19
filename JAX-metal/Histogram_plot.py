@@ -20,7 +20,7 @@ from matplotlib import rc
 from pylab import rcParams
 from matplotlib import colors
 from qutip import *
-from OP_Functions import *
+from Eff_OP_Functions import *
 import h5py
 os.environ["PATH"] += os.pathsep + '/Library/TeX/texbin'
 rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
@@ -54,7 +54,7 @@ import optax
 #torch.autograd.set_detect_anomaly(True)
 
 
-hf = h5py.File(script_dir+'/Data/Histogram_Extmp1.hdf5', 'r')
+hf = h5py.File(script_dir+'/Histogram_Extmp1.hdf5', 'r')
 
 nlevels = int(np.array(hf['nlevels']))
 #a = destroy(nlevels)
@@ -86,7 +86,7 @@ ax.set_xlabel(r'$\mathcal{F}\left(\hat{\rho}_f,\hat{\rho}(t_f)\right)$', fontsiz
 ax.set_ylabel('Number of Trajectories', fontsize=18)
 ax.tick_params(labelsize=15)
 ax.legend(loc=2,fontsize=15)
-ax.set_xlim(0,1)
+#ax.set_xlim(0,1)
 #plt.savefig(script_dir+'/Plots/histogram_catstate.pdf',bbox_inches='tight')
 
 hf.close()
