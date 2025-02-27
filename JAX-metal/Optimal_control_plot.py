@@ -21,6 +21,7 @@ from pylab import rcParams
 from matplotlib import colors
 from qutip import *
 from Eff_OP_Functions import *
+from Initialization import *
 import h5py
 os.environ["PATH"] += os.pathsep + '/Library/TeX/texbin'
 rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
@@ -53,35 +54,14 @@ script_dir = os.path.dirname(__file__)
 ##torch.backends.cuda.cufft_plan_cache[0].max_size = 32
 #torch.autograd.set_detect_anomaly(True)
 
+Ops, rho_ir, rho_ii,  rho_fr, rho_fi, params = RdParams(Dirname)
 
-hf = h5py.File(script_dir+'/Optimal_control_Extmp1.hdf5', 'r')
+with h5py.File(Dirname+'/Optimal_control_solution.hdf5', 'r') as f:
+    Initvals = np.array(f['Initvals'])
+    l1_t = np.array(f['l1_t'])
+    theta_t = np.array(f['theta_t'])
 
-nlevels = int(np.array(hf['nlevels']))
-a = destroy(nlevels)
-tau = np.array(hf['tau']).item()
-l1max = np.array(hf['l1max']).item()
-theta_t = np.array(hf['theta_t'])
-l1_t = np.array(hf['l1_t'])
-ts = np.array(hf['ts'])
-ropt = np.array(hf['r_t'])
-rho_i =Qobj(np.array(hf['rho_i']))
-rho_f = Qobj(np.array(hf['rho_f_target']))
-Initvals = np.array(hf['Initvals'])
-dt = ts[1]-ts[0]
-np_Idmat=np.identity(10)
-Idmat = jnp.array(np_Idmat)
-
-X = (a+a.dag())/np.sqrt(2)
-P = (a-a.dag())/(np.sqrt(2)*1j)
-H = (X*X+P*P)/2.0
-X2 = X*X
-CXP =X*P+P*X
-P2 = P*P
-#Ljump = X
-#Mjump = P
-#rho_i = rho_i*rho_i.dag()
-#rho_f = rho_f*rho_f.dag()
-
+'''
 G100 = np.matmul(np_Idmat[0], Initvals)
 G010 = np.matmul(np_Idmat[1], Initvals)
 k100 = np.matmul(np_Idmat[2], Initvals)
@@ -94,32 +74,10 @@ k110 = np.matmul(np_Idmat[8], Initvals)
 k020 = np.matmul(np_Idmat[9], Initvals)
 #rho_f_simul1, X_simul1, P_simul1, varX_simul1, covXP_simul1, varP_simul1, rop_strat,nbar, theta_t = OPsoln_control_l10(X, P, H, rho_i, alr, ali, A, B, Cv, k0r, k0i, Dvp, Dvm, ts,   tau, 1)
 #rho_f_simuld, X_simuld, P_simuld, varX_simuld, covXP_simuld, varP_simuld, rop_stratd,nbard = OPsoln_strat_SHO(X, P, H, rho_i, alr, ali, A, B, ts, theta_t,  tau, 1)# OPsoln_control_l10(X, P, H, rho_i, alr, ali, A, B, Cv, k0r, k0i, Dvp, Dvm, ts,   tau, 1)
+'''
 
 
-jnpId = jnp.identity(nlevels)
-jnpXr = jnp.array(X.full().real)
-jnpXi = jnp.array(X.full().imag)
-jnpPr = jnp.array(P.full().real)
-jnpPi = jnp.array(P.full().imag)
-jnpHr = jnp.array(H.full().real)
-jnpHi = jnp.array(H.full().imag)
-CXP = X*P+P*X
-jnpCXPr = jnp.array(CXP.full().real)
-jnpCXPi = jnp.array(CXP.full().imag)
-jnp_rho_ir = jnp.array(rho_i.full().real)
-jnp_rho_ii= jnp.array(rho_i.full().imag)
-jnp_rho_fr = jnp.array(rho_f.full().real)
-jnp_rho_fi = jnp.array(rho_f.full().imag)
-jnpX2r= jnp.matmul(jnpXr, jnpXr)-jnp.matmul(jnpXi, jnpXi)
-jnpX2i= jnp.matmul(jnpXr, jnpXi)+jnp.matmul(jnpXi, jnpXr)
-jnpP2r= jnp.matmul(jnpPr, jnpPr)-jnp.matmul(jnpPi, jnpPi)
-jnpP2i= jnp.matmul(jnpPr, jnpPi)+jnp.matmul(jnpPi, jnpPr)
-P2 = P*P
-
-Ops = (jnpXr, jnpXi, jnpPr, jnpPi,  jnpHr, jnpHi, jnpX2r, jnpX2i, jnpCXPr, jnpCXPi,  jnpP2r, jnpP2i, jnpId)
-params = (l1max, ts, dt, tau, Idmat)
-
-Q1j1, Q2j1, Q3j1, Q4j1, Q5j1, rho_f_simul2r, rho_f_simul2i, rop_stratj = OP_wcontrol(jnp.array(Initvals), Ops,  jnp_rho_ir, jnp_rho_ii, l1_t, theta_t, params)
+Q1j1, Q2j1, Q3j1, Q4j1, Q5j1, rho_f_simul2r, rho_f_simul2i, rop_stratj = OP_wcontrol(jnp.array(Initvals), Ops, rho_ir, rho_ii,  l1_t, theta_t, params)
 
 fig, axs = plt.subplots(4,2,figsize=(12,8),sharex='all')
 q1i = expect(X,rho_i)
@@ -183,7 +141,4 @@ axs[3,1].set_ylabel(r'$\lambda_1^\star$',fontsize=15)
 axs[3,1].tick_params(labelsize=14)
 
 plt.subplots_adjust(wspace=0.22, hspace=0.08)
-#plt.savefig(script_dir+'/Plots/Cat_State_OC.pdf',bbox_inches='tight')
-
-hf.close()
-
+plt.savefig(Dirname+'/Plots/OC_plot.pdf',bbox_inches='tight')

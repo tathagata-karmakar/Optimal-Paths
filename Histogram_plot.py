@@ -20,7 +20,8 @@ from matplotlib import rc
 from pylab import rcParams
 from matplotlib import colors
 from qutip import *
-from OP_Functions import *
+from Eff_OP_Functions import *
+from Initialization  import *
 import h5py
 os.environ["PATH"] += os.pathsep + '/Library/TeX/texbin'
 rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
@@ -54,25 +55,11 @@ import optax
 #torch.autograd.set_detect_anomaly(True)
 
 
-hf = h5py.File(script_dir+'/Data/Histogram_Extmp1.hdf5', 'r')
+with h5py.File(Dirname+'/Histogram.hdf5', 'r') as f:
+    fidelities0 = np.array(f['Fidelities_wo_control'])
+    fidelities_OP = np.array(f['Fidelities_w_control'])
+    samplesize =np.array(f['Sample_size']).item()
 
-nlevels = int(np.array(hf['nlevels']))
-#a = destroy(nlevels)
-tau = np.array(hf['tau']).item()
-theta_t = np.array(hf['theta_t'])
-theta0 = np.zeros(len(theta_t))  #Control parameter \theta = 0
-l1_t = np.array(hf['l1_t'])
-l10 = np.zeros(len(l1_t))   #Control parameter \lambda_1 = 0
-ts = np.array(hf['ts'])
-#ropt = np.array(hf['r_t'])
-rho_i =Qobj(np.array(hf['rho_i']))
-rho_f = Qobj(np.array(hf['rho_f_target']))
-Initvals = np.array(hf['Initvals'])
-
-dt = ts[1]-ts[0]
-samplesize =np.array(hf['Sample_size']).item()
-fidelities0 = np.array(hf['Fidelities_wo_control'])
-fidelities_OP = np.array(hf['Fidelities_w_control'])
 #np_Idmat=np.identity(10)
 #Idmat = jnp.array(np_Idmat)
 
@@ -86,7 +73,5 @@ ax.set_xlabel(r'$\mathcal{F}\left(\hat{\rho}_f,\hat{\rho}(t_f)\right)$', fontsiz
 ax.set_ylabel('Number of Trajectories', fontsize=18)
 ax.tick_params(labelsize=15)
 ax.legend(loc=2,fontsize=15)
-ax.set_xlim(0,1)
-#plt.savefig(script_dir+'/Plots/histogram_catstate.pdf',bbox_inches='tight')
-
-hf.close()
+#ax.set_xlim(0,1)
+plt.savefig(Dirname+'/Plots/histogram.pdf',bbox_inches='tight')

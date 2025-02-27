@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Dec 17 16:19:07 2024
+Created on Sun Dec  8 11:22:59 2024
 
 @author: tatha_k
 """
@@ -20,8 +20,7 @@ from matplotlib import rc
 from pylab import rcParams
 from matplotlib import colors
 from qutip import *
-from Eff_OP_Functions import *
-from Initialization import *
+from OP_Functions import *
 import h5py
 os.environ["PATH"] += os.pathsep + '/Library/TeX/texbin'
 rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
@@ -55,23 +54,39 @@ import optax
 #torch.autograd.set_detect_anomaly(True)
 
 
-with h5py.File(Dirname+'/Alternate_control.hdf5', 'r') as f:
-    Initvals = np.array(f['Initials_sample'])
-    l10 = np.array(f['l1_t_sample'])
-    theta0 = np.array(f['theta_t_sample'])
+hf = h5py.File(script_dir+'/Data/Histogram_Extmp1.hdf5', 'r')
+
+nlevels = int(np.array(hf['nlevels']))
+#a = destroy(nlevels)
+tau = np.array(hf['tau']).item()
+theta_t = np.array(hf['theta_t'])
+theta0 = np.zeros(len(theta_t))  #Control parameter \theta = 0
+l1_t = np.array(hf['l1_t'])
+l10 = np.zeros(len(l1_t))   #Control parameter \lambda_1 = 0
+ts = np.array(hf['ts'])
+#ropt = np.array(hf['r_t'])
+rho_i =Qobj(np.array(hf['rho_i']))
+rho_f = Qobj(np.array(hf['rho_f_target']))
+Initvals = np.array(hf['Initvals'])
+
+dt = ts[1]-ts[0]
+samplesize =np.array(hf['Sample_size']).item()
+fidelities0 = np.array(hf['Fidelities_wo_control'])
+fidelities_OP = np.array(hf['Fidelities_w_control'])
+#np_Idmat=np.identity(10)
+#Idmat = jnp.array(np_Idmat)
 
 
-
-fig, axs = plt.subplots(2,1,figsize=(6,4),sharex='all')
-axs[0].tick_params(labelsize=14)
-axs[1].tick_params(labelsize=14)
-axs[1].plot(ts, l10, linewidth =3, color='orange')
-axs[0].plot(ts, theta0, linewidth =3, color='orange')
-axs[0].set_ylabel(r'$\theta(t)$',fontsize=15)
-axs[1].set_ylabel(r'$\lambda_1(t)$',fontsize=15)
-axs[1].set_xlabel(r'$t$',fontsize=15)
-plt.subplots_adjust(wspace=0.22, hspace=0.08)
-
-plt.savefig(Dirname+'/Plots/sample_control.pdf',bbox_inches='tight')
+fig, ax = plt.subplots(figsize=(6,4))
 
 
+ax.hist(fidelities_OP, label = 'Optimal control', hatch ='|')
+ax.hist(fidelities0, label="Sample control", alpha = 0.6, hatch ='\\')
+ax.set_xlabel(r'$\mathcal{F}\left(\hat{\rho}_f,\hat{\rho}(t_f)\right)$', fontsize=18)
+ax.set_ylabel('Number of Trajectories', fontsize=18)
+ax.tick_params(labelsize=15)
+ax.legend(loc=2,fontsize=15)
+ax.set_xlim(0,1)
+#plt.savefig(script_dir+'/Plots/histogram_catstate.pdf',bbox_inches='tight')
+
+hf.close()

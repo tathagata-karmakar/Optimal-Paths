@@ -20,8 +20,7 @@ from matplotlib import rc
 from pylab import rcParams
 from matplotlib import colors
 from qutip import *
-from Eff_OP_Functions import *
-from Initialization import *
+from OP_Functions import *
 import h5py
 
 os.environ["PATH"] += os.pathsep + '/Library/TeX/texbin'
@@ -45,8 +44,48 @@ import optax
 script_dir = os.path.dirname(__file__)
 
 
+fname  = script_dir+'/Data/Optimal_control_Extmp3.hdf5'
+hf = h5py.File(fname, 'r')
+l1max = 0.2
+nlevels = int(np.array(hf['nlevels']))
+a = destroy(nlevels)
+tau = np.array(hf['tau']).item()
+theta_t = np.array(hf['theta_t'])
+theta0 = np.zeros(len(theta_t))  #Control parameter \theta = 0
+l1_t = np.array(hf['l1_t'])
+l10 = np.zeros(len(l1_t))   #Control parameter \lambda_1 = 0
+ts = np.array(hf['ts'])
+ropt = np.array(hf['r_t'])
+rho_i =Qobj(np.array(hf['rho_i']))
+rho_f = Qobj(np.array(hf['rho_f_target']))
+Initvals = np.array(hf['Initvals'])
+#l1max = np.array(hf['l1max']).item()
+dt = ts[1]-ts[0]
+np_Idmat=np.identity(10)
+Idmat = jnp.array(np_Idmat)
+hf.close()
 
-Ops, rho_ir, rho_ii,  rho_fr, rho_fi, params = RdParams(Dirname)
+X = (a+a.dag())/np.sqrt(2)
+P = (a-a.dag())/(np.sqrt(2)*1j)
+H = (X*X+P*P)/2.0
+X2 = X*X
+#Ljump = X
+#Mjump = P
+#rho_i = rho_i*rho_i.dag()
+#rho_f = rho_f*rho_f.dag()
+
+
+jnpId = jnp.identity(nlevels, dtype=complex)
+jnpX = jnp.array(X.full())
+jnpP = jnp.array(P.full())
+jnpH = jnp.array(H.full())
+jnp_rho_i = jnp.array(rho_i.full())
+jnp_rho_f = jnp.array(rho_f.full())
+jnpX2= jnp.matmul(jnpX, jnpX)
+CXP = X*P+P*X
+jnpCXP = jnp.array(CXP.full())
+jnpP2= jnp.matmul(jnpP, jnpP)
+
 
 q1i = expect(X,rho_i)
 q1f = expect(X,rho_f)
@@ -75,9 +114,8 @@ for n in range(nsteps):
   #Initials = update_control2_l10_2input(Initials,  jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, Fmat, ts, dt, tau, Ncos, MMat1, jnpId, lrate)
   print (n, time.time()-stime)
 '''  
-
-params = (l1max, ts, dt, tau, Idmat)
-cost_b, rho_f_simulr, rho_f_simuli = CostF_control_generate(Initials, Ops, rho_ir, rho_ii, rho_fr, rho_fi, jnp_theta_mat, jnp_l1_mat, params, Nc, jnp_MMat)
+  
+cost_b, rho_f_simul = CostF_control_generate(Initials, jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, jnp_rho_f, jnp_theta_mat, jnp_l1_mat, l1max, ts, dt, tau, Nc, jnp_MMat, jnpId)
 Initials_c, cost_c = Initials, cost_b
 step_size = 1.0
 #temp = temp0
@@ -88,7 +126,7 @@ temp = tempi
 lrate = 1e-2
 
 #for n in range(nsteps):
-nsteps = 20
+nsteps = 2000
 n=0
 nb = 0
 diff = 0
@@ -96,12 +134,12 @@ diff = 0
 while temp>tempf and (n<nsteps):
   stime = time.time()
   Initials_n = Initials_c+step_size*jnp.array(np.random.rand(nvars+4*Nc)-0.5)
-  cost_n, rho_nr, rho_ni = CostF_control_generate(Initials_n, Ops, rho_ir, rho_ii, rho_fr, rho_fi,  jnp_theta_mat, jnp_l1_mat, params, Nc, jnp_MMat)
+  cost_n, rho_n = CostF_control_generate(Initials_n, jnpX, jnpP, jnpH, jnpX2, jnpCXP, jnpP2, jnp_rho_i, jnp_rho_f, jnp_theta_mat, jnp_l1_mat, l1max, ts, dt, tau, Nc, jnp_MMat, jnpId)
   if (cost_n<cost_b):
       #if cost_n<=2.0 and  (J_n<=J_b):
           #Initials, cost_b, J_b = Initials_n, cost_n, J_n
       #elif cost_n>2.0:
-      Initials, cost_b, rho_f_simulr, rho_f_simuli = Initials_n, cost_n, rho_nr, rho_ni
+      Initials, cost_b, rho_f_simul = Initials_n, cost_n, rho_n
       nb = n
   print (nb, n,  -cost_b, diff, metropolis, temp) #Cost is the negative of fidelity
   diff = cost_n-cost_c
@@ -122,7 +160,7 @@ theta_t = (np.pi/2.0)*jnp.tanh(2*jnp.matmul(theta_mat,Initvals)/np.pi)
 l1_t = (l1max)*jnp.tanh(jnp.matmul(l1_mat,Initials)/l1max)
 
 
-with h5py.File(Dirname+"/Alternate_control.hdf5", "w") as f:
+with h5py.File(fname, 'a') as f:
     dset1 = f.create_dataset("theta_t_sample", data = theta_t)
     dset2 = f.create_dataset("l1_t_sample", data = l1_t)
     dset3 = f.create_dataset("Initials_sample", data = Initvals)
@@ -134,7 +172,7 @@ axs[0].set_ylabel(r'$\theta(t)$', fontsize =12)
 axs[1].set_ylabel(r'$\lambda_1(t)$',  fontsize =12)
 axs[1].set_xlabel(r'$t$', fontsize =12)
 plt.subplots_adjust(wspace=0.05, hspace=0.1)
-plt.savefig(Dirname+'/sample_control_extmp.pdf',bbox_inches='tight')
+plt.savefig(script_dir+'/Plots/sample_control_extmp.pdf',bbox_inches='tight')
 
 '''
 Initvals = np.array(Initials)

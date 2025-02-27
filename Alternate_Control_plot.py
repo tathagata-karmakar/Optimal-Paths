@@ -13,14 +13,15 @@ import matplotlib as mpl
 import numpy as np
 import math
 import scipy
-from scipy.integrate import simps as intg
+from scipy.integrate import simpson as intg
 #from google.colab import files
 #from google.colab import drive
 from matplotlib import rc
 from pylab import rcParams
 from matplotlib import colors
 from qutip import *
-from OP_Functions import *
+from Eff_OP_Functions import *
+from Initialization import *
 import h5py
 os.environ["PATH"] += os.pathsep + '/Library/TeX/texbin'
 rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
@@ -53,31 +54,14 @@ import optax
 ##torch.backends.cuda.cufft_plan_cache[0].max_size = 32
 #torch.autograd.set_detect_anomaly(True)
 
+Ops, rho_ir, rho_ii,  rho_fr, rho_fi, params = RdParams(Dirname)
+ts = params[1]
 
-hf = h5py.File(script_dir+'/Data/CatState_Ex2.hdf5', 'r')
+with h5py.File(Dirname+'/Alternate_control.hdf5', 'r') as f:
+    Initvals = np.array(f['Initials_sample'])
+    l10 = np.array(f['l1_t_sample'])
+    theta0 = np.array(f['theta_t_sample'])
 
-nlevels = int(np.array(hf['nlevels']))
-a = destroy(nlevels)
-tau = np.array(hf['tau']).item()
-theta_t = np.array(hf['theta_t'])
-theta0 =np.array(hf['theta_t_sample'])  #Control parameter \theta = 0
-l1_t = np.array(hf['l1_t'])
-l10 = np.array(hf['l1_t_sample'])  #Control parameter \lambda_1 = 0
-ts = np.array(hf['ts'])
-ropt = np.array(hf['r_t'])
-rho_i =Qobj(np.array(hf['rho_i']))
-rho_f = Qobj(np.array(hf['rho_f_target']))
-Initvals = np.array(hf['Initvals'])
-dt = ts[1]-ts[0]
-np_Idmat=np.identity(10)
-Idmat = jnp.array(np_Idmat)
-
-X = (a+a.dag())/np.sqrt(2)
-P = (a-a.dag())/(np.sqrt(2)*1j)
-H = (X*X+P*P)/2.0
-X2 = X*X
-
-hf.close()
 
 
 fig, axs = plt.subplots(2,1,figsize=(6,4),sharex='all')
@@ -90,6 +74,6 @@ axs[1].set_ylabel(r'$\lambda_1(t)$',fontsize=15)
 axs[1].set_xlabel(r'$t$',fontsize=15)
 plt.subplots_adjust(wspace=0.22, hspace=0.08)
 
-#plt.savefig(script_dir+'/Codes/Optimal-Paths/Plots/sample_control_catstate.pdf',bbox_inches='tight')
+plt.savefig(Dirname+'/Plots/sample_control.pdf',bbox_inches='tight')
 
 
