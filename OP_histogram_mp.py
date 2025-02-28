@@ -62,13 +62,13 @@ from multiprocessing import Pool, Value, Process
 import multiprocessing as mp
 import multiprocessing.pool
 
-def OP_ST_JAX(dWs, Ops, rho_ir, rho_ii, rho_fr, rho_fi, l10i, theta0i, newparams):
+def OP_ST_JAX(dWs, Ops, rho_ir, rho_ii, rho_fr, rho_fi, l10i, theta0i, rOP, newparams):
         # Reconstruct the JAX function within the process
-        local_f = lambda x1, x2, x3, x4, x5, x6, x7, x8, x9: OP_stochastic_trajectory_JAX(x1, x2, x3, x4, x5, x6, x7, x8, x9)
-        return local_f(dWs, Ops, rho_ir, rho_ii, rho_fr, rho_fi, l10i, theta0i, newparams)
+        local_f = lambda x1, x2, x3, x4, x5, x6, x7, x8, x9, x10: OP_stochastic_trajectory_JAX(x1, x2, x3, x4, x5, x6, x7, x8, x9, x10)
+        return local_f(dWs, Ops, rho_ir, rho_ii, rho_fr, rho_fi, l10i, theta0i, rOP, newparams)
 
 if __name__=="__main__":
-    Dirname = script_dir+"/Data/Cat_to_ground"
+    Dirname = script_dir+"/Data/Coherent_to_coherent"
     Ops, rho_ir, rho_ii,  rho_fr, rho_fi, params = RdParams(Dirname)
     '''
     with h5py.File(Dirname+'/Parameters.hdf5', 'r') as f:
@@ -91,63 +91,84 @@ if __name__=="__main__":
         Initvals = np.array(f['Initvals'])
         l1_t = np.array(f['l1_t'])
         theta_t = np.array(f['theta_t'])
+        rOC = np.array(f['ML_readouts'])
+        JOC = np.array(f['Jval']).item()
         
 
     with h5py.File(Dirname+'/Alternate_control.hdf5', 'r') as f:
         Initvals_s = np.array(f['Initials_sample'])
         l10 = np.array(f['l1_t_sample'])
         theta0 = np.array(f['theta_t_sample'])
+        rAC = np.array(f['ML_readouts'])
+        JAC = np.array(f['Jval']).item()
         
 
     tsi = np.linspace(params[1][0], params[1][-1], 5*len(params[1]))
     l1_ti = np.interp(tsi, params[1], l1_t)
+    rOCi = np.interp(tsi, params[1], rOC)
     theta_ti = np.interp(tsi, params[1], theta_t)
+    #Q1j1, Q2j1, Q3j1, Q4j1, Q5j1, rho_f_simul2r, rho_f_simul2i, rOCi = OP_wcontrol(jnp.array(Initvals), Ops, rho_ir, rho_ii,  l1_ti, theta_ti, newparams)
     l10i = np.interp(tsi, params[1], l10)
+    rACi = np.interp(tsi, params[1], rAC)
     theta0i = np.interp(tsi, params[1], theta0)
     newparams = (params[0], tsi, tsi[1]-tsi[0], params[3], params[4])
-    batchsize = 1000
-    ns = 1
+    #Q1j1, Q2j1, Q3j1, Q4j1, Q5j1, rho_f_simul2r, rho_f_simul2i, rOCi = OP_wcontrol(jnp.array(Initvals), Ops, rho_ir, rho_ii,  l1_ti, theta_ti, newparams)
+    #Q1j1, Q2j1, Q3j1, Q4j1, Q5j1, rho_f_simul2r, rho_f_simul2i, rACi = OP_wcontrol(jnp.array(Initvals)[:10], Ops, rho_ir, rho_ii,  l10i, theta0i, newparams)
+    batchsize = 500
+    ns = 2
     samplesize = ns*batchsize
     #fidelitiesC = np.zeros(samplesize)
     #fidelities_OC = np.zeros(samplesize)
     
-    resultsC = jnp.zeros((ns, batchsize))
-    resultsOC = jnp.zeros((ns, batchsize))
-    
+    resultsC = jnp.zeros((ns, batchsize, 2))
+    resultsOC = jnp.zeros((ns, batchsize,2 )) 
+    rng = np.random.default_rng(seed=42)
     stime = time.time()
     for n in range(ns):
         btime  = time.time()
         print ("Histogram generation for batch: ", n+1)
         with mp.pool.Pool() as pool:
-            dWt = jnp.array(np.random.normal(scale=np.sqrt(newparams[2]), size = (batchsize,len(theta0i))))
-            input_tuples = [(dWs, Ops, rho_ir, rho_ii, rho_fr, rho_fi, l10i, theta0i, newparams) for dWs in dWt]
+            dWt = jnp.array(rng.normal(scale=np.sqrt(newparams[2]), size = (batchsize,len(theta0i))))
+            input_tuples = [(dWs, Ops, rho_ir, rho_ii, rho_fr, rho_fi, l10i, theta0i, rACi, newparams) for dWs in dWt]
             results =pool.starmap(OP_ST_JAX, input_tuples)
-        resultsC = resultsC.at[n,:].set(jnp.array(results))
+        resultsC = resultsC.at[n,:, :].set(jnp.array(results))
             
         with mp.pool.Pool() as pool:
-            dWt = jnp.array(np.random.normal(scale=np.sqrt(newparams[2]), size = (batchsize,len(theta_ti))))
-            input_tuples = [(dWs, Ops, rho_ir, rho_ii, rho_fr, rho_fi, l1_ti, theta_ti, newparams) for dWs in dWt]
+            dWt = jnp.array(rng.normal(scale=np.sqrt(newparams[2]), size = (batchsize,len(theta_ti))))
+            input_tuples = [(dWs, Ops, rho_ir, rho_ii, rho_fr, rho_fi, l1_ti, theta_ti, rOCi, newparams) for dWs in dWt]
             results1 =pool.starmap(OP_ST_JAX, input_tuples)
-        resultsOC = resultsOC.at[n,:].set(jnp.array(results1))
+        resultsOC = resultsOC.at[n,:, :].set(jnp.array(results1))
         print ("Total batch time :", time.time()-btime)
         
     
-    fidelitiesC = jnp.array(resultsC.flatten())
-    fidelitiesOC = jnp.array(resultsOC.flatten())
+    #fidelitiesC = jnp.array(resultsC.flatten())
+    #fidelitiesOC = jnp.array(resultsOC.flatten())
+    dataC = jnp.reshape(resultsC, (ns*batchsize, 2))
+    dataOC = jnp.reshape(resultsOC, (ns*batchsize, 2))
     print (time.time()-stime)
     
-    fig, ax = plt.subplots()
-
-    ax.hist(results)
-    ax.hist(results1)
-    ax.set_xlabel(r'$\mathcal{F}\left(\hat{\rho}_f,\hat{\rho}(t_f)\right)$')
-
+    fig, ax = plt.subplots(3,1,figsize=(12,12))
+    bins = np.linspace(0,1,50)
+    ax[0].hist(dataC[:,0], bins = bins)
+    ax[0].hist(dataOC[:,0], bins = bins)
+    ax[0].tick_params(labelsize=15)
+    ax[2].tick_params(labelsize=15)
+    ax[1].tick_params(labelsize=15)
+    ax[1].set_xlim(0,1)
+    ax[2].set_xlim(0,1)
+    ax[1].scatter(dataC[:,0], dataC[:,1])
+    ax[2].scatter(dataOC[:,0], dataOC[:,1])
+    ax[0].set_xlabel(r'$\mathcal{F}\left(\hat{\rho}_f,\hat{\rho}(t_f)\right)$')
+    
     with h5py.File(Dirname+"/Histogram.hdf5", "w") as f:
-        dset1 = f.create_dataset("Fidelities_wo_control", data = fidelitiesC)
-        dset2 = f.create_dataset("Fidelities_w_control", data = fidelitiesOC)
+        dset1 = f.create_dataset("Fidelities_wo_control", data = dataC[:,0])
+        dset2 = f.create_dataset("Fidelities_w_control", data = dataOC[:,0])
+        dset3 = f.create_dataset("Deviations_wo_control", data = dataC[:,1])
+        dset4 = f.create_dataset("Deviations_w_control", data = dataOC[:,2])
         #dset10 = f.create_dataset("Initvals", data = Initvals)   
-        dset3 = f.create_dataset("Sample_size", data = samplesize)   
-
+        dset5 = f.create_dataset("Sample_size", data = samplesize)   
+        dset6 = f.create_dataset("ts_histogram", data = tsi)   
+    
     '''
     #print (nsample)
     #Q1j, Q2j, Q3j, Q4j, Q5j, rho_f_simul, rs= OP_stochastic_trajectory(X.full(), P.full(), H.full(), X2.full(), rho_i.full(), l10, theta0, ts, dt,  tau,  np.identity(nlevels))

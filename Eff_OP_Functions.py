@@ -67,9 +67,13 @@ import numba as nb
 #import torchvision.models as models
 ##torch.backends.cuda.cufft_plan_cache[0].max_size = 32
 #torch.autograd.set_detect_anomaly(True)
-
-
-def CompMultR(Ar, Ai, Br, Bi):
+'''
+All the operators and states are split into their real and imaginary parts
+'''
+'''
+Matrix multiplication functions
+'''
+def CompMultR(Ar, Ai, Br, Bi): 
     return Ar @ Br - Ai @ Bi#jnp.matmul(Ar, Br)-jnp.matmul(Ai, Bi)
 def CompMultI(Ar, Ai, Br, Bi):
     return Ar @ Bi + Ai @ Br#jnp.matmul(Ar, Bi)+jnp.matmul(Ai, Br)
@@ -79,7 +83,17 @@ def CompMult(Ar, Ai, Br, Bi):
 def ExpVal(Xr, Xi, rhor, rhoi): #Expectation value of a hermitian operator wrt state rho
     return jnp.trace(CompMultR(Xr, Xi, rhor, rhoi))
 
+def Moment_calc(Ops, rhor, rhoi):
+    expX = ExpVal(Ops[0], Ops[1], rhor, rhoi)#.item()
+    expP = ExpVal(Ops[2], Ops[3], rhor, rhoi)#.item()
+    expX2 = ExpVal(Ops[6], Ops[7], rhor, rhoi)#.item()
+    expP2 = ExpVal(Ops[10], Ops[11], rhor, rhoi)#.item()
+    expCXP = ExpVal(Ops[8], Ops[9], rhor, rhoi)#.item()
+    return expX, expP, expX2, expCXP, expP2
 
+'''
+Fidelity calculation
+'''
 def Fidelity_PS(rho_f_simulr, rho_f_simuli, rhotr, rhoti):
   #delrho = rho_f_simul-rho_f
   #eps = 1e-2
@@ -88,23 +102,29 @@ def Fidelity_PS(rho_f_simulr, rho_f_simuli, rhotr, rhoti):
   fid = jnp.trace(tmpr)
   return fid
 
+'''
+Negative fidelity, to be used as cost function elsewhere
+'''
 def Tr_Distance(rho_f_simulr, rho_f_simuli, rho_fr, rho_fi):
-  #delrho = rho_f_simul-rho_f
-  #eps = 1e-2
-  #delrho2 = jnp.matmul(delrho, delrho)
-  #dist = jnp.sqrt(jnp.trace(delrho2).real)
   
   return -Fidelity_PS(rho_f_simulr, rho_f_simuli, rho_fr, rho_fi)#+1e2*dist
 
+'''
+params = (l1max, ts, dt, tau, Idmat)
+Idmat is 10x10 identity matrix 
+'''
+
+'''
+Update (differential) of first order Gamma terms (see article)
+'''
 def G_k_updates_first_order(G1s, cs, s2, c2, l1u, params):
-    Atmp = params[2]*jnp.array([[0, 1.0, -cs/4.0, -s2/4.0], [l1u, 0, c2/4, s2/4], [0, 0, 0, 1.0], [0, 0, l1u, 0.0] ])
-    #G101 = G10+params[2]*(G01-snth*(csth*k10+snth*k01)/(4*params[3]))
-    #G011 = G01+params[2]*(-(1+2*l1)*G10+csth*(csth*k10+snth*k01)/(4*params[3]))
-    #k101 = k10+params[2]*k01
-    #k011 = k01-params[2]*(1+2*l1)*k10
+    Atmp = params[2]*jnp.array([[0, 1.0, -cs/4.0, -s2/4.0], [l1u, 0, c2/4, cs/4], [0, 0, 0, 1.0], [0, 0, l1u, 0.0] ])
+    
     return Atmp @ G1s
 
-
+'''
+Update (differential) of the first and second order Gamma terms
+'''
 def Del_G_k_updates(G1s, G2s, r,  csth, snth, l1,  params):
     c1 = csth/params[3]
     s1 = snth/params[3]
@@ -118,7 +138,7 @@ def Del_G_k_updates(G1s, G2s, r,  csth, snth, l1,  params):
     #k101 = params[2]*k01
     #k011 = -params[2]*(1+2*l1)*k10
     #r = jnp.array([csth, snth, 0, 0]) @ G1s
-    Btmp = jnp.array([[0, 2, 0, -cs/2, -s2/2, 0 ], [l1u, 0, 1, c2/4, 0, -s2/4], [0, 2*l1u, 0, 0, c2/2, cs/2], [2*cs, 2*s2, 0, 0, 2, 0], [-c2, 0, s2, l1u, 0, 1], [0, -2*c2, -2*cs, 0, -2*l1u, 0]])
+    Btmp = jnp.array([[0, 2, 0, -cs/2, -s2/2, 0 ], [l1u, 0, 1, c2/4, 0, -s2/4], [0, 2*l1u, 0, 0, c2/2, cs/2], [2*cs, 2*s2, 0, 0, 2, 0], [-c2, 0, s2, l1u, 0, 1], [0, -2*c2, -2*cs, 0, 2*l1u, 0]])
     Ctmp = jnp.array([[0, 0, s1/2, 0], [0, 0, -c1/4, s1/4], [0, 0, 0, -c1/2.0], [-2*s1, 0, 0, 0], [c1, -s1, 0, 0], [0, 2*c1, 0, 0]])
     G2s1 = params[2]*(Btmp @ G2s + r*Ctmp @ G1s)
     #G201 = +params[2]*(2*G11+snth*(r*k10-csth*k20-snth*k11)/(2*params[3]))
@@ -129,22 +149,28 @@ def Del_G_k_updates(G1s, G2s, r,  csth, snth, l1,  params):
     #k021 = +params[2]*(-2*(1+2*l1)*k11+2*csth*(-snth*G02-csth*G11+r*G01)/params[3])  
     return G1s1, G2s1
 
-
-
+'''
+Total of the first and second order Gamma terms
+'''
 def G_k_updates(G1s, G2s, csth, snth, l1, r, params):
-    G1s1, G2s1 = Del_G_k_updates(G1s, G2s, csth, snth, l1, params)
+    G1s1, G2s1 = Del_G_k_updates(G1s, G2s, r, csth, snth, l1, params)
     return G1s+G1s1, G2s+G2s1
 
-
+'''
+State update for given Kraus operator
+'''
 def rho_kraus_update(rhor, rhoi, Fr, Fi):
     tmp1r, tmp1i = CompMult(rhor, rhoi, Fr.T, -Fi.T)
     rho1r, rho1i = CompMult(Fr, Fi, tmp1r, tmp1i)
-    Nr = jnp.trace(rho1r)
+    Nr = jnp.trace(rho1r) 
     Ni = jnp.trace(rho1i)
-    rho2r = (Nr*rho1r+Ni*rho1i)/(Nr**2+Ni**2)
-    rho2i = (Nr*rho1i-Ni*rho1r)/(Nr**2+Ni**2)
+    rho2r = (Nr*rho1r+Ni*rho1i)/(Nr**2+Ni**2) #Normalization
+    rho2i = (Nr*rho1i-Ni*rho1r)/(Nr**2+Ni**2) #Normalization
     return rho2r, rho2i
 
+'''
+Calculation of optimal theta and lambda1, given the first and second order Gamma parameters
+'''
 def Optimal_theta_l1(G1s, G2s, params):
     G10 = jnp.array([1.0, 0, 0, 0,]) @ G1s
     G01 = jnp.array([0.0, 1.0, 0, 0,]) @ G1s
@@ -160,6 +186,9 @@ def Optimal_theta_l1(G1s, G2s, params):
     l1 = -params[0]*jnp.sign(k20)
     return theta, l1
 
+'''
+Straonovich measurement Kraus operator
+'''
 def M_step(Ops, r, csth, snth,  l1, params): #Optimal control integration with \lambda_1=0
   #csth, snth = jnp.cos(theta), jnp.sin(theta)
   #r = jnp.array([csth, snth, 0, 0]) @ G1s
@@ -171,6 +200,9 @@ def M_step(Ops, r, csth, snth,  l1, params): #Optimal control integration with \
   Fac2i = -params[2]*(Ops[7]*csth**2+csth*snth*Ops[9]+Ops[11]*snth**2)/(4*params[3])+params[2]*r*(csth*Ops[1]+snth*Ops[3])/(2*params[3])-params[2]*H1r
   return Fac2r, Fac2i#, G101, G011, k101, k011, G201, G111, G021, k201, k111, k021
 
+'''
+Ito measurement Kraus operator
+'''
 def M_stochastic_step(Ops, r, csth, snth,  l1, params): #Optimal control integration with \lambda_1=0
   #csth, snth = jnp.cos(theta), jnp.sin(theta)
   #r = jnp.array([csth, snth, 0, 0]) @ G1s
@@ -182,24 +214,27 @@ def M_stochastic_step(Ops, r, csth, snth,  l1, params): #Optimal control integra
   Fac2i = -params[2]*(Ops[7]*csth**2+csth*snth*Ops[9]+Ops[11]*snth**2)/(8*params[3])+params[2]*r*(csth*Ops[1]+snth*Ops[3])/(2*params[3])-params[2]*H1r
   return Fac2r, Fac2i#, G101, G011, k101, k011, G201, G111, G021, k201, k111, k021
 
-
-
 def RK4_delyn(k1, k2, k3, k4):
     return k1/6.0+k2/3.0+k3/3.0+k4/6.0
 
 def integrator_step(G1s, G2s, Ops, params):
+    #expX, expP, expX2, expCXP, expP2 = Moment_calc(Ops, rhor, rhoi)
     theta, l1 = Optimal_theta_l1(G1s, G2s, params)
     csth, snth = jnp.cos(theta), jnp.sin(theta)
     r = jnp.array([csth, snth, 0, 0]) @ G1s
     Fr, Fi  = M_step(Ops, r, csth, snth, l1, params)
     dG1s, dG2s = Del_G_k_updates(G1s, G2s, r,  csth, snth, l1, params)
+    #dq0 = params[2]*(r**2 - 2*r*(csth*expX+snth*expP)+(csth**2*expX2+csth*snth*expCXP+snth**2*expP2))/(2*params[3])
     return Fr, Fi, dG1s, dG2s
     
 
-#@njit(inline='always')
 @jit
-def RK4_step(Ops, rhor, rhoi, G1s, G2s, params): 
+def RK4_step(Ops, rhor, rhoi, G1s, G2s, q0, params): 
   #= Input_Initials
+  theta, l1 = Optimal_theta_l1(G1s, G2s, params)
+  csth, snth = jnp.cos(theta), jnp.sin(theta)
+  r = jnp.array([csth, snth, 0, 0]) @ G1s
+  expX, expP, expX2, expCXP, expP2 = Moment_calc(Ops, rhor, rhoi)
   Fk1r, Fk1i, G1k1, G2k1 = integrator_step(G1s, G2s, Ops, params)
   Fk2r, Fk2i, G1k2, G2k2 = integrator_step(G1s+G1k1/2.0, G2s+G2k1/2.0, Ops,   params)
   Fk3r, Fk3i, G1k3, G2k3 = integrator_step(G1s+G1k2/2.0, G2s+G2k2/2.0, Ops,  params)
@@ -208,6 +243,7 @@ def RK4_step(Ops, rhor, rhoi, G1s, G2s, params):
   G2s1 = G2s+RK4_delyn(G2k1, G2k2, G2k3, G2k4)
   Fr = Ops[12]+RK4_delyn(Fk1r, Fk2r, Fk3r, Fk4r)
   Fi = RK4_delyn(Fk1i, Fk2i, Fk3i, Fk4i)
+  dq0 = params[2]*(r**2 - 2*r*(csth*expX+snth*expP)+(csth**2*expX2+csth*snth*expCXP+snth**2*expP2))/(2*params[3])
   '''
   #theta, l1 = Optimal_theta_l1(G1s, G2s, params)
   
@@ -242,7 +278,7 @@ def RK4_step(Ops, rhor, rhoi, G1s, G2s, params):
   rho1r, rho1i = rho_kraus_update(rhor, rhoi, Fr, Fi)
   
   #Idth1 = Idth
-  return  rho1r, rho1i, G1s1, G2s1
+  return  rho1r, rho1i, G1s1, G2s1, q0+dq0
 
 def OC_plot_step(G1s, Ops, csth, snth, l1, params):
     #theta, l1 = Optimal_theta_l1(G1s, G2s, params)
@@ -291,9 +327,9 @@ def Euler_wcontrol(Ops, rhor, rhoi, G1s, csth, snth, l1, params):
 
 def RK4_stepJAX(i, Input_Initials): #Optimal control integration with \lambda_1=0
   Ops, rhor, rhoi, G1s, G2s, params, j, Idth = Input_Initials
-  Idth1 = Idth
+  #Idth1 = Idth
   
-  rho1r, rho1i, G1s1, G2s1 = RK4_step(Ops, rhor, rhoi, G1s, G2s, params)
+  rho1r, rho1i, G1s1, G2s1, Idth1 = RK4_step(Ops, rhor, rhoi, G1s, G2s, Idth, params)
   return (Ops, rho1r, rho1i, G1s1, G2s1, params, j+1, Idth1)
 
 
@@ -309,8 +345,8 @@ def OPsoln_control_l10_JAX(Initials, Ops, rho_ir, rho_ii,  params):
   #k20 = jnp.matmul(params[4][7], Initials)
   #k11 = jnp.matmul(params[4][8], Initials)
   #k02 = jnp.matmul(params[4][9], Initials)
-  G1s = params[4][0:4] @ Initials
-  G2s = params[4][4:] @ Initials
+  G1s = params[4][0:4] @ Initials #First order $\Gamma$
+  G2s = params[4][4:] @ Initials #Second order $\Gamma$
   
   #print (GLL)
   #GMM = jnp.matmul(jnp.array([0,0,0,0,0,0,0,1,1.0]),Initials)+jnp.array([0])
@@ -319,15 +355,15 @@ def OPsoln_control_l10_JAX(Initials, Ops, rho_ir, rho_ii,  params):
   #phi = jnp.array([theta_t[0]+ts[0]])
   #theta = jnp.array(0.0)
   k1=0
-  Idth = 0.0
+  Idth = jnp.array(0)
   Ops, rhor, rhoi, G1s, G2s, params, k1, Idth = jax.lax.fori_loop(0, len(params[1])-1, RK4_stepJAX,(Ops, rho_ir, rho_ii, G1s, G2s, params, k1, Idth))
   #rho_update(Initials, X, P, H, X2, P2, XP, PX, rho, I_tR, I_tI, i, theta_t, ts, tau, dt)
-  return rhor, rhoi
+  return rhor, rhoi, Idth
 
 @jit
 def CostF_control_l101(Initials, Ops, rho_ir, rho_ii, rho_fr, rho_fi,  params):
-  rho_f_simulr, rho_f_simuli = OPsoln_control_l10_JAX(Initials, Ops, rho_ir, rho_ii, params)
-  return Tr_Distance(rho_f_simulr, rho_f_simuli, rho_fr, rho_fi), rho_f_simulr, rho_f_simuli
+  rho_f_simulr, rho_f_simuli, Idth = OPsoln_control_l10_JAX(Initials, Ops, rho_ir, rho_ii, params)
+  return Tr_Distance(rho_f_simulr, rho_f_simuli, rho_fr, rho_fi), Idth, rho_f_simulr, rho_f_simuli
 
 
 def OPintegrate_strat(Initials, Ops, rho_ir, rho_ii, params):
@@ -360,6 +396,7 @@ def OPintegrate_strat(Initials, Ops, rho_ir, rho_ii, params):
   diff = np.zeros(npoints)
   readout = np.zeros(npoints)
   #k1 = 0
+  Idth = 0
   while (j<npoints):
       
       #print (j,r)
@@ -393,11 +430,11 @@ def OPintegrate_strat(Initials, Ops, rho_ir, rho_ii, params):
       #ht = np.matmul(delh_t_Mat, Initials) + e_jphi*I_t
       r = jnp.array([csth, snth, 0, 0]) @ G1s
       readout[j] = r.item()
-      Idth = 0.0
-      rhor, rhoi, G1s, G2s = RK4_step(Ops, rhor, rhoi, G1s, G2s, params)
+      #Idth += params[2]*(r**2-2*r*(csth*Q1[j]+snth*Q2[j])+csth**2*expX+snth**2*expP+2*snth*csth*(Q4[j]+expX*expP))/params[3]
+      rhor, rhoi, G1s, G2s, Idth = RK4_step(Ops, rhor, rhoi, G1s, G2s, Idth, params)
       j+=1
   #Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5 = jax.lax.fori_loop(0, len(ts), rho_integrate_JAX,(Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5))
-  return Q1, Q2, Q3, Q4, Q5, theta_t, l1_t, rhor, rhoi, readout, diff
+  return Q1, Q2, Q3, Q4, Q5, theta_t, l1_t, rhor, rhoi, readout, Idth
 
 
 def OP_wcontrol(Initials, Ops, rho_ir, rho_ii,  l1_t, theta_t, params):
@@ -420,6 +457,7 @@ def OP_wcontrol(Initials, Ops, rho_ir, rho_ii,  l1_t, theta_t, params):
   l1_ti = np.interp(tsi, params[1], l1_t)
   theta_ti = np.interp(tsi, params[1], theta_t)
   istep = 0
+  Idth = 0
   while (j<len(params[1])):
       t = params[1][j]
       theta = theta_t[j]
@@ -444,7 +482,7 @@ def OP_wcontrol(Initials, Ops, rho_ir, rho_ii,  l1_t, theta_t, params):
       Q5[j] = ExpVal(Ops[10], Ops[11], rhor, rhoi).item()-expP**2
       Q4[j] = ExpVal(Ops[8], Ops[9], rhor, rhoi).item()/2.0-expX*expP
 
-      
+      Idth += params[2]*(r**2-2*r*(csth*Q1[j]+snth*Q2[j])+csth**2*expX+snth**2*expP+2*snth*csth*(Q4[j]+expX*expP))/params[3]
       if (j<len(params[1])-1):
           theta1 = theta_t[j+1]
           #thetai = theta_ti[istep+1]
@@ -460,7 +498,7 @@ def OP_wcontrol(Initials, Ops, rho_ir, rho_ii,  l1_t, theta_t, params):
       j+=1
       istep+=2
   #Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5 = jax.lax.fori_loop(0, len(ts), rho_integrate_JAX,(Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5))
-  return Q1, Q2, Q3, Q4, Q5, rhor, rhoi, readout
+  return Q1, Q2, Q3, Q4, Q5, rhor, rhoi, readout, Idth
 
 def OP_wcontrol_Euler(Initials, Ops, rho_ir, rho_ii, l1_t, theta_t, params):
   #I_tR = jnp.array([0.0])
@@ -614,10 +652,11 @@ def CostF_control_generate(Initials, Ops, rho_ir, rho_ii, rho_fr, rho_fi, theta_
 
 
 def OP_trajectory_JAX(i, Input_Initials):
-    dWt, Ops, rhor, rhoi, l1_t, theta_t, Idth, params, j = Input_Initials
+    dWt, Ops, rhor, rhoi, l1_t, theta_t, r_t, Idth, params, j = Input_Initials
     l1 = l1_t[j]
     #print(j)
     theta = theta_t[j]
+    rOP = r_t[j]
     #H1 = H+l1*X2
     csth, snth = jnp.cos(theta), jnp.sin(theta)
     expX = ExpVal(Ops[0], Ops[1], rhor, rhoi)
@@ -627,6 +666,7 @@ def OP_trajectory_JAX(i, Input_Initials):
     expL = csth*expX + snth*expP
     dW = dWt[j]
     r = expL+jnp.sqrt(params[3])*dW/params[2]
+    Idth1 = Idth+params[2]*(r-rOP)**2
     #delL = Ljump - expL*Id
     #F = -jnp.matmul(delL, delL)*dt/(8*tau)+delL*dW/(2*jnp.sqrt(tau))
     #F1 = Id+F#+jnp.matmul(F,F)/2
@@ -643,11 +683,11 @@ def OP_trajectory_JAX(i, Input_Initials):
     #rho1 = rho1/tmptr
     #rho1 = rho1/jnp.trace(rho1)
     #rho1 = rho+dt*(-1j*jnp.matmul(H1,rho)+1j*jnp.matmul(rho,H1)+(jnp.matmul(jnp.matmul(Ljump,rho),Ljump)-jnp.matmul(Ljump2, rho)/2.0-jnp.matmul(rho,Ljump2)/2.0)/(4*tau))+dW*(jnp.matmul(delL,rho)+jnp.matmul(rho,delL))/jnp.sqrt(4*tau)
-    return (dWt, Ops, rhor, rhoi, l1_t, theta_t, Idth, params, j+1)
+    return (dWt, Ops, rhor, rhoi, l1_t, theta_t, r_t, Idth1, params, j+1)
 
 
 @jit    
-def OP_stochastic_trajectory_JAX(dWt, Ops, rho_ir, rho_ii, rho_fr, rho_fi,  l1_t, theta_t, params):
+def OP_stochastic_trajectory_JAX(dWt, Ops, rho_ir, rho_ii, rho_fr, rho_fi,  l1_t, theta_t, r_t, params):
   #rho = rho_i
   rhor = rho_ir
   rhoi = rho_ii
@@ -655,8 +695,8 @@ def OP_stochastic_trajectory_JAX(dWt, Ops, rho_ir, rho_ii, rho_fr, rho_fi,  l1_t
   #theta = jnp.array(0.0)
   k1=0
   Idth = 0.0
-  dWt, Ops, rhor, rhoi, l1_t, theta_t, Idth, params, k1 = jax.lax.fori_loop(0, len(params[1])-1, OP_trajectory_JAX,(dWt, Ops, rhor, rhoi, l1_t, theta_t, Idth, params, k1))
-  return Fidelity_PS(rhor, rhoi, rho_fr, rho_fi)
+  dWt, Ops, rhor, rhoi, l1_t, theta_t, r_t, Idth, params, k1 = jax.lax.fori_loop(0, len(params[1])-1, OP_trajectory_JAX,(dWt, Ops, rhor, rhoi, l1_t, theta_t, r_t, Idth, params, k1))
+  return Fidelity_PS(rhor, rhoi, rho_fr, rho_fi), jnp.sqrt(Idth/params[1][-1])
 
 def RdParams(Dirname):
     with h5py.File(Dirname+'/Parameters.hdf5', 'r') as f:

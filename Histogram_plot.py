@@ -66,9 +66,9 @@ with h5py.File(Dirname+'/Histogram.hdf5', 'r') as f:
 
 fig, ax = plt.subplots(figsize=(6,4))
 
-
-ax.hist(fidelities_OP, label = 'Optimal control', hatch ='|')
-ax.hist(fidelities0, label="Sample control", alpha = 0.6, hatch ='\\')
+bins = np.linspace(0,1,50)
+ax.hist(fidelities_OP, bins=bins, label = 'Optimal control', hatch ='|')
+ax.hist(fidelities0, bins = bins, label="Sample control", alpha = 0.6, hatch ='\\')
 ax.set_xlabel(r'$\mathcal{F}\left(\hat{\rho}_f,\hat{\rho}(t_f)\right)$', fontsize=18)
 ax.set_ylabel('Number of Trajectories', fontsize=18)
 ax.tick_params(labelsize=15)

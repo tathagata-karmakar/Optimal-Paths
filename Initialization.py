@@ -70,17 +70,17 @@ from pathlib import Path
 #torch.autograd.set_detect_anomaly(True)
 
 
-Dirname = script_dir+"/Data/Cat_to_cat"
+Dirname = script_dir+"/Data/Coherent_to_coherent"
 Path(Dirname).mkdir(parents=True, exist_ok=True)
 Path(Dirname+'/Plots').mkdir(parents=True, exist_ok=True)
 
-nlevels = 25
+nlevels = 35
 
 #rho_f = coherent(nlevels, 0.5)
 a = destroy(nlevels)
 t_i = 0
 t_f = 3.0
-ts = np.linspace(t_i, t_f, int(t_f/0.0001))
+ts = np.linspace(t_i, t_f, int(t_f/0.0005))
 dt = ts[1]-ts[0]
 tau = 15.0
 q4f = np.sqrt(1+4*tau*tau)-2*tau
@@ -93,21 +93,21 @@ rparam = snh2r+csh2r
 r_sq = np.log(rparam)/2
 xiR = r_sq*(q5f-q3f)/(2*snh2r)
 xiI = r_sq*(-q4f)/snh2r
-fin_alr = 1.25
+fin_alr = .35
 fin_ali = -0.75
 in_alr = -0.25#-0.1#in_alr*np.cos(t_f)+in_ali*np.sin(t_f)
-in_ali = 1.75#0.5#in_ali*np.cos(t_f)-in_alr*np.sin(t_f)
+in_ali = 0.5#0.5#in_ali*np.cos(t_f)-in_alr*np.sin(t_f)
 
 '''
 Initial and final states
 '''
 eps =0.1
-rho_f= coherent(nlevels, fin_alr+1j*fin_ali)+coherent(nlevels, -fin_alr-1j*fin_ali)#basis(nlevels, 0)#squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
-#rho_i = (basis(nlevels, 0)+basis(nlevels,4))/np.sqrt(2)
+rho_f= coherent(nlevels, fin_alr+1j*fin_ali)#+coherent(nlevels, -fin_alr-1j*fin_ali)#basis(nlevels, 0)#squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
+#rho_i = (basis(nlevels, 0)-basis(nlevels,4))/np.sqrt(2)
 #rho_f = basis(nlevels, 0)#+basis(nlevels,4))/np.sqrt(2)
 #rho_f = (basis(nlevels, 0)+basis(nlevels,4))/np.sqrt(2)
 #rho_i = (basis(nlevels, 0)+np.sqrt(3)*basis(nlevels,4))/np.sqrt(4)
-rho_i=coherent(nlevels, in_alr+1j*in_ali)+coherent(nlevels, -in_alr-1j*in_ali)#(coherent(nlevels, in_alr+1j*in_ali)+coherent(nlevels, -in_alr-1j*in_ali))/np.sqrt(2)
+rho_i=coherent(nlevels, in_alr+1j*in_ali)#+coherent(nlevels, -in_alr-1j*in_ali)#(coherent(nlevels, in_alr+1j*in_ali)+coherent(nlevels, -in_alr-1j*in_ali))/np.sqrt(2)
 #rho_f = basis(nlevels, 0)#+coherent(nlevels, -in_alr-1j*in_ali))#coherent(nlevels, fin_alr+1j*fin_ali)
 #rho_f = squeeze(nlevels,  xiR+1j*xiI)*coherent(nlevels, fin_alr+1j*fin_ali)
 #rho_f_int = squeeze(nlevels,  xiR*np.cos(2*t_f)-xiI*np.sin(2*t_f)+1j*(xiI*np.cos(2*t_f)+xiR*np.sin(2*t_f)))*coherent(nlevels, fin_alr*np.cos(t_f)-fin_ali*np.sin(t_f)+1j*(fin_ali*np.cos(t_f)+fin_alr*np.sin(t_f)))
@@ -128,6 +128,7 @@ rho_i = rho_i*rho_i.dag()
 rho_f = rho_f*rho_f.dag()
 rho_i = rho_i/rho_i.tr()   
 rho_f = rho_f/rho_f.tr()
+
 
 Q1i = expect(X,rho_i)
 Q2i = expect(P,rho_i)

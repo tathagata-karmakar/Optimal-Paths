@@ -91,7 +91,7 @@ temp = tempi
 lrate = 1e-2
 
 #for n in range(nsteps):
-nsteps = 2000
+nsteps = 500
 n=0
 nbest = 0
 diff = 0
@@ -124,18 +124,22 @@ Initvals = np.array(Initials)
 theta_t = (np.pi/2.0)*jnp.tanh(2*jnp.matmul(theta_mat,Initvals)/np.pi)
 l1_t = (l1max)*jnp.tanh(jnp.matmul(l1_mat,Initials)/l1max)
 
-
+Q1j1, Q2j1, Q3j1, Q4j1, Q5j1, rho_f_simul2r, rho_f_simul2i, rop_stratj, Jval = OP_wcontrol(jnp.array(Initvals)[:10], Ops, rho_ir, rho_ii,  l1_t, theta_t, params)
 with h5py.File(Dirname+"/Alternate_control.hdf5", "w") as f:
     dset1 = f.create_dataset("theta_t_sample", data = theta_t)
     dset2 = f.create_dataset("l1_t_sample", data = l1_t)
     dset3 = f.create_dataset("Initials_sample", data = Initvals)
+    dset4 = f.create_dataset("ML_readouts", data = rop_stratj)
+    dset5 = f.create_dataset("Jval", data = Jval)
 
-fig, axs = plt.subplots(2,1,figsize=(4,6),sharex='all')
+fig, axs = plt.subplots(3,1,figsize=(4,6),sharex='all')
 axs[0].plot(ts, theta_t, linewidth =4, color = 'green')
 axs[1].plot(ts, l1_t, linewidth =4, color = 'green')
+axs[2].plot(ts, rop_stratj, linewidth =4, color = 'green')
 axs[0].set_ylabel(r'$\theta(t)$', fontsize =12)
 axs[1].set_ylabel(r'$\lambda_1(t)$',  fontsize =12)
-axs[1].set_xlabel(r'$t$', fontsize =12)
+axs[2].set_ylabel(r'$r(t)$',  fontsize =12)
+axs[2].set_xlabel(r'$t$', fontsize =12)
 plt.subplots_adjust(wspace=0.05, hspace=0.1)
 plt.savefig(Dirname+'/sample_control_extmp.pdf',bbox_inches='tight')
 
