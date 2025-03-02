@@ -68,7 +68,7 @@ def OP_ST_JAX(dWs, Ops, rho_ir, rho_ii, rho_fr, rho_fi, l10i, theta0i, rOP, newp
         return local_f(dWs, Ops, rho_ir, rho_ii, rho_fr, rho_fi, l10i, theta0i, rOP, newparams)
 
 if __name__=="__main__":
-    Dirname = script_dir+"/Data/Coherent_to_coherent"
+    Dirname = script_dir+"/Data/Cat_to_ground"
     Ops, rho_ir, rho_ii,  rho_fr, rho_fi, params = RdParams(Dirname)
     '''
     with h5py.File(Dirname+'/Parameters.hdf5', 'r') as f:

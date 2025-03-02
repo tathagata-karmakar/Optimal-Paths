@@ -104,7 +104,7 @@ jnpl1_t = jnp.array(l1_t)
 #params = (l1max, ts, dt, tau, Idmat)
 cost_b, J_b, rhotmpr, rhotmpi = CostF_control_l101(Initials, Ops, rho_ir, rho_ii, rho_fr, rho_fi,  params)
 Initials_c, cost_c, J_c = Initials, cost_b, J_b
-step_size = 2.0
+step_size = 1.0
 #temp = temp0
 metropolis = 1.0
 tempf = 0.005
@@ -113,7 +113,7 @@ temp = tempi
 lrate = 1e-2
 
 #for n in range(nsteps):
-nsteps = 2000
+nsteps = 5000
 n=0
 nbest = 0
 stime = time.time()
@@ -122,12 +122,14 @@ while temp>tempf and (n<nsteps):
   #stime = time.time()
   Initials_n = Initials_c+step_size*jnp.array(np.random.rand(10)-0.5)
   cost_n, J_n, rhotmpr, rhotmpi = CostF_control_l101(Initials_n, Ops, rho_ir, rho_ii, rho_fr, rho_fi, params)
-  if (-cost_b<0.97):
+  if (-cost_b<0.85):
       if (cost_n<cost_b):
           Initials, cost_b, J_b = Initials_n, cost_n, J_n
           nbest = n
       #print (nb, n,  -cost_b, temp) #Cost is the negative of fidelity
       diff = cost_n-cost_c
+      diff2 = J_n-J_c
+      #metropolis2 = jnp.exp(-50*diff2/temp)
       metropolis = jnp.exp(-100*diff/temp)
       if (diff<0) or (jnp.array(np.random.rand())<metropolis):
           Initials_c, cost_c, J_c = Initials_n, cost_n, J_n
@@ -135,14 +137,16 @@ while temp>tempf and (n<nsteps):
       else:
           temp = temp/(1-0.002*temp)           
   else:
-      if (cost_n<cost_b) and (J_n<J_b):
+      if  (J_n<J_b) and (cost_n<cost_b):
           Initials, cost_b, J_b = Initials_n, cost_n, J_n
           nbest = n
       #print (nb, n,  -cost_b, temp) #Cost is the negative of fidelity
       diff = cost_n-cost_c
       diff2 = J_n-J_c
-      metropolis = jnp.exp(-100*diff/temp)
-      if ((diff<0)and (diff2<0)) or (jnp.array(np.random.rand())<metropolis):
+      #print (diff, diff2)
+      metropolis = jnp.exp(-100*(diff+diff2)/temp)
+      #metropolis2 = jnp.exp(-50*diff2/temp)
+      if ((diff<0) and (diff2<0)) or ((jnp.array(np.random.rand())<metropolis)):
           Initials_c, cost_c, J_c = Initials_n, cost_n, J_n
           temp = temp/(1+0.02*temp)
       else:
@@ -151,7 +155,7 @@ while temp>tempf and (n<nsteps):
       #cost_b, J_b = CostF_control_l101(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId)
       
   n+=1
-  step_size = step_size/(1+0.0001*step_size)
+  step_size = step_size/(1+0.0001*step_size*0)
   print (nbest, n,  -cost_b, J_b, temp, metropolis)
 
 print ('TT: ', time.time()-stime)  
@@ -162,7 +166,8 @@ Initvals = np.array(Initials)
 
 stime  = time.time()
 Q1j, Q2j, Q3j, Q4j, Q5j, theta_tj, l1_tj, rho_f_simul2r, rho_f_simul2i, rop_stratj, Jval = OPintegrate_strat(jnp.array(Initvals), Ops, rho_ir, rho_ii, params)
-print (time.time()-stime)
+fid  = Fidelity_PS(rho_f_simul2r, rho_f_simul2i, rho_fr, rho_fi).item()
+print (time.time()-stime, fid)
 
 
 with h5py.File(Dirname+"/Optimal_control_solution.hdf5", "w") as f:
@@ -172,6 +177,12 @@ with h5py.File(Dirname+"/Optimal_control_solution.hdf5", "w") as f:
     dset4 = f.create_dataset("Initvals", data = Initvals)   
     dset5 = f.create_dataset("ML_readouts", data = rop_stratj) 
     dset6 = f.create_dataset("Jval", data = Jval) 
+    dset7 = f.create_dataset("Final_fidelity", data = fid) 
+    dset8 = f.create_dataset("Q1t", data = Q1j) 
+    dset9 = f.create_dataset("Q2t", data = Q2j) 
+    dset10 = f.create_dataset("Q3t", data = Q3j) 
+    dset11 = f.create_dataset("Q4t", data = Q4j) 
+    dset12 = f.create_dataset("Q5t", data = Q5j) 
 
 #f.close()
 

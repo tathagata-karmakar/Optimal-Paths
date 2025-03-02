@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+ #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Sun Dec  8 11:22:59 2024
@@ -73,5 +73,5 @@ ax.set_xlabel(r'$\mathcal{F}\left(\hat{\rho}_f,\hat{\rho}(t_f)\right)$', fontsiz
 ax.set_ylabel('Number of Trajectories', fontsize=18)
 ax.tick_params(labelsize=15)
 ax.legend(loc=2,fontsize=15)
-#ax.set_xlim(0,1)
+ax.set_xlim(0.7,1)
 plt.savefig(Dirname+'/Plots/histogram.pdf',bbox_inches='tight')

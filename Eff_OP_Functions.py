@@ -91,6 +91,10 @@ def Moment_calc(Ops, rhor, rhoi):
     expCXP = ExpVal(Ops[8], Ops[9], rhor, rhoi)#.item()
     return expX, expP, expX2, expCXP, expP2
 
+def vars_calc(Ops, rhor, rhoi):
+    Q1, Q2, Q3, Q4, Q5 = Moment_calc(Ops, rhor, rhoi)
+    return Q1, Q2, Q3-Q1**2, Q4/2.0-Q1*Q2, Q5-Q2**2
+
 '''
 Fidelity calculation
 '''
@@ -431,7 +435,8 @@ def OPintegrate_strat(Initials, Ops, rho_ir, rho_ii, params):
       r = jnp.array([csth, snth, 0, 0]) @ G1s
       readout[j] = r.item()
       #Idth += params[2]*(r**2-2*r*(csth*Q1[j]+snth*Q2[j])+csth**2*expX+snth**2*expP+2*snth*csth*(Q4[j]+expX*expP))/params[3]
-      rhor, rhoi, G1s, G2s, Idth = RK4_step(Ops, rhor, rhoi, G1s, G2s, Idth, params)
+      if (j<npoints-1):
+          rhor, rhoi, G1s, G2s, Idth = RK4_step(Ops, rhor, rhoi, G1s, G2s, Idth, params)
       j+=1
   #Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5 = jax.lax.fori_loop(0, len(ts), rho_integrate_JAX,(Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5))
   return Q1, Q2, Q3, Q4, Q5, theta_t, l1_t, rhor, rhoi, readout, Idth

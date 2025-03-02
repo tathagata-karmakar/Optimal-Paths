@@ -91,7 +91,7 @@ temp = tempi
 lrate = 1e-2
 
 #for n in range(nsteps):
-nsteps = 500
+nsteps = 5000
 n=0
 nbest = 0
 diff = 0
@@ -124,13 +124,22 @@ Initvals = np.array(Initials)
 theta_t = (np.pi/2.0)*jnp.tanh(2*jnp.matmul(theta_mat,Initvals)/np.pi)
 l1_t = (l1max)*jnp.tanh(jnp.matmul(l1_mat,Initials)/l1max)
 
+
 Q1j1, Q2j1, Q3j1, Q4j1, Q5j1, rho_f_simul2r, rho_f_simul2i, rop_stratj, Jval = OP_wcontrol(jnp.array(Initvals)[:10], Ops, rho_ir, rho_ii,  l1_t, theta_t, params)
+fid  = Fidelity_PS(rho_f_simul2r, rho_f_simul2i, rho_fr, rho_fi).item()
+print (fid)
 with h5py.File(Dirname+"/Alternate_control.hdf5", "w") as f:
     dset1 = f.create_dataset("theta_t_sample", data = theta_t)
     dset2 = f.create_dataset("l1_t_sample", data = l1_t)
     dset3 = f.create_dataset("Initials_sample", data = Initvals)
     dset4 = f.create_dataset("ML_readouts", data = rop_stratj)
-    dset5 = f.create_dataset("Jval", data = Jval)
+    dset5 = f.create_dataset("Final_fidelity", data = fid) 
+    dset6 = f.create_dataset("Jval", data = Jval)
+    dset8 = f.create_dataset("Q1t", data = Q1j1) 
+    dset9 = f.create_dataset("Q2t", data = Q2j1) 
+    dset10 = f.create_dataset("Q3t", data = Q3j1) 
+    dset11 = f.create_dataset("Q4t", data = Q4j1) 
+    dset12 = f.create_dataset("Q5t", data = Q5j1) 
 
 fig, axs = plt.subplots(3,1,figsize=(4,6),sharex='all')
 axs[0].plot(ts, theta_t, linewidth =4, color = 'green')

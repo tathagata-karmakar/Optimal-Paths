@@ -53,9 +53,10 @@ import optax
 #import torchvision.models as models
 ##torch.backends.cuda.cufft_plan_cache[0].max_size = 32
 #torch.autograd.set_detect_anomaly(True)
-
+Dirname = script_dir+"/Data/Cat_to_ground"
 Ops, rho_ir, rho_ii,  rho_fr, rho_fi, params = RdParams(Dirname)
 ts = params[1]
+
 
 with h5py.File(Dirname+'/Alternate_control.hdf5', 'r') as f:
     Initvals = np.array(f['Initials_sample'])
