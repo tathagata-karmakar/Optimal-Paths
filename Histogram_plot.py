@@ -21,7 +21,7 @@ from pylab import rcParams
 from matplotlib import colors
 from qutip import *
 from Eff_OP_Functions import *
-from Initialization  import *
+#from Initialization  import *
 import h5py
 os.environ["PATH"] += os.pathsep + '/Library/TeX/texbin'
 rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
@@ -54,7 +54,7 @@ import optax
 ##torch.backends.cuda.cufft_plan_cache[0].max_size = 32
 #torch.autograd.set_detect_anomaly(True)
 
-
+Dirname = script_dir+"/Data/Cat_to_ground"
 with h5py.File(Dirname+'/Histogram.hdf5', 'r') as f:
     fidelities0 = np.array(f['Fidelities_wo_control'])
     fidelities_OP = np.array(f['Fidelities_w_control'])
@@ -73,5 +73,5 @@ ax.set_xlabel(r'$\mathcal{F}\left(\hat{\rho}_f,\hat{\rho}(t_f)\right)$', fontsiz
 ax.set_ylabel('Number of Trajectories', fontsize=18)
 ax.tick_params(labelsize=15)
 ax.legend(loc=2,fontsize=15)
-ax.set_xlim(0.7,1)
-plt.savefig(Dirname+'/Plots/histogram.pdf',bbox_inches='tight')
+ax.set_xlim(0.3,1)
+#plt.savefig(Dirname+'/Plots/histogram.pdf',bbox_inches='tight')

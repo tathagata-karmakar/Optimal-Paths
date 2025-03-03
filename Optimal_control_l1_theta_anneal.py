@@ -22,7 +22,7 @@ from pylab import rcParams
 from matplotlib import colors
 from qutip import *
 from Eff_OP_Functions import *
-from Initialization import *
+#from Initialization import *
 #from Triangle_Fns import *
 import h5py
 os.environ["PATH"] += os.pathsep + '/Library/TeX/texbin'
@@ -56,7 +56,7 @@ import numba as nb
 #import torchvision.models as models
 ##torch.backends.cuda.cufft_plan_cache[0].max_size = 32
 #torch.autograd.set_detect_anomaly(True)
-
+Dirname = script_dir+"/Data/Coherent_to_ground"
 Ops, rho_ir, rho_ii,  rho_fr, rho_fi, params = RdParams(Dirname)
 
 Q1i = ExpVal(Ops[0], Ops[1], rho_ir, rho_ii).item()#expect(X,rho_i)
@@ -122,7 +122,7 @@ while temp>tempf and (n<nsteps):
   #stime = time.time()
   Initials_n = Initials_c+step_size*jnp.array(np.random.rand(10)-0.5)
   cost_n, J_n, rhotmpr, rhotmpi = CostF_control_l101(Initials_n, Ops, rho_ir, rho_ii, rho_fr, rho_fi, params)
-  if (-cost_b<0.85):
+  if (-cost_b<0.95):
       if (cost_n<cost_b):
           Initials, cost_b, J_b = Initials_n, cost_n, J_n
           nbest = n
@@ -155,7 +155,7 @@ while temp>tempf and (n<nsteps):
       #cost_b, J_b = CostF_control_l101(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId)
       
   n+=1
-  step_size = step_size/(1+0.0001*step_size*0)
+  step_size = step_size/(1+0.0001*step_size)
   print (nbest, n,  -cost_b, J_b, temp, metropolis)
 
 print ('TT: ', time.time()-stime)  

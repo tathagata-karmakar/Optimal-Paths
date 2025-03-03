@@ -53,11 +53,11 @@ import optax
 #import torchvision.models as models
 ##torch.backends.cuda.cufft_plan_cache[0].max_size = 32
 #torch.autograd.set_detect_anomaly(True)
-Dirname = script_dir+"/Data/Cat_to_ground"
+Dirname = script_dir+"/Data/Cat_to_cat"
 with h5py.File(Dirname+'/Optimal_control_solution.hdf5', 'r') as f:
     #Initvals = np.array(f['Initvals'])
-    #l1_t = np.array(f['l1_t'])
-    #theta_t = np.array(f['theta_t'])
+    l1_t = np.array(f['l1_t'])
+    theta_t = np.array(f['theta_t'])
     Q1t = np.array(f['Q1t'])
     Q2t = np.array(f['Q2t'])
     Q3t = np.array(f['Q3t'])
@@ -68,7 +68,13 @@ with h5py.File(Dirname+'/Optimal_control_solution.hdf5', 'r') as f:
 Ops, rho_ir, rho_ii,  rho_fr, rho_fi, params = RdParams(Dirname)
 
 ts = params[1]
-#Q1j, Q2j, Q3j, Q4j, Q5j, rho_f_simul, rs= OP_stochastic_trajectory(Ops, rho_ir, rho_ii, l1_t, theta_t, ts, dt,  tau,  np.identity(nlevels))
+
+tsi = np.linspace(params[1][0], params[1][-1], 5*len(params[1]))
+l1_ti = np.interp(tsi, params[1], l1_t)
+#rOCi = np.interp(tsi, params[1], rOC)
+theta_ti = np.interp(tsi, params[1], theta_t)
+newparams = (params[0], tsi, tsi[1]-tsi[0], params[3], params[4])
+Q1j, Q2j, Q3j, Q4j, Q5j, rho_f_simulr, rho_f_simuli, rs= OP_stochastic_trajectory(Ops, rho_ir, rho_ii, l1_ti, theta_ti, newparams)
 #Q1j1, Q2j1, Q3j1, Q4j1, Q5j1, rho_f_simul2, rop_stratj = OP_wcontrol(Initvals, X.full(), P.full(), H.full(), X2.full(), CXP.full(), P2.full(), rho_i.full(), l1_t, theta_t, ts, dt,  tau,  np_Idmat, np.identity(nlevels))
 
 fig, axs = plt.subplots(6,1,figsize=(6,14),sharex='all')
@@ -78,22 +84,22 @@ axs[2].tick_params(labelsize=14)
 axs[3].tick_params(labelsize=14)
 axs[4].tick_params(labelsize=14)
 axs[5].tick_params(labelsize=14)
-#axs[0].plot(ts, Q1j, linewidth =3, color='blue', label = 'Trajectory')
+axs[0].plot(tsi, Q1j, linewidth =3, color='blue', label = 'Trajectory')
 axs[0].plot(ts, Q1t, linewidth =3, color='g', linestyle='dashed', label = 'MLP')
 axs[0].set_ylabel(r'$\left\langle\hat{X}\right\rangle$',fontsize=15)
-#axs[1].plot(ts, Q2j, linewidth =3, color='blue')
+axs[1].plot(tsi, Q2j, linewidth =3, color='blue')
 axs[1].plot(ts, Q2t, linewidth =3, color='g', linestyle='dashed')
 axs[1].set_ylabel(r'$\left\langle\hat{P}\right\rangle$',fontsize=15)
-#axs[2].plot(ts, Q3j, linewidth =3, color='blue')
+axs[2].plot(tsi, Q3j, linewidth =3, color='blue')
 axs[2].plot(ts, Q3t, linewidth =3, color='g', linestyle='dashed')
 axs[2].set_ylabel(r'$\textrm{var}\hat{X}$',fontsize=15)
-#axs[3].plot(ts, Q4j, linewidth =3, color='blue')
+axs[3].plot(tsi, Q4j, linewidth =3, color='blue')
 axs[3].plot(ts, Q4t, linewidth =3, color='g', linestyle='dashed')
 axs[3].set_ylabel(r'$\textrm{cov}\left(\hat{X},\hat{P}\right)$',fontsize=15)
-#axs[4].plot(ts, Q5j, linewidth =3, color='blue')
+axs[4].plot(tsi, Q5j, linewidth =3, color='blue')
 axs[4].plot(ts, Q5t, linewidth =3, color='g', linestyle='dashed')
 axs[4].set_ylabel(r'$\textrm{var}\hat{P}$',fontsize=15)
-#axs[5].plot(ts, rs,linewidth =3, color='blue')
+axs[5].plot(tsi, rs,linewidth =3, color='blue')
 axs[5].plot(ts, rop_stratj,linewidth =3, color='g', linestyle='dashed')
 axs[5].set_ylabel(r'$r$',fontsize=15)
 axs[5].set_xlabel(r'$t$',fontsize=15)
@@ -102,6 +108,4 @@ axs[5].set_xlabel(r'$t$',fontsize=15)
 plt.subplots_adjust(wspace=0.22, hspace=0.08)
 axs[0].legend(loc=1,fontsize=15)
 
-#plt.savefig(script_dir+'/Plots/trajectory_binomial_code2.pdf',bbox_inches='tight')
-
-
+plt.savefig(Dirname+'/Plots/sample_trajectory.pdf',bbox_inches='tight')

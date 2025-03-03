@@ -21,7 +21,7 @@ from pylab import rcParams
 from matplotlib import colors
 from qutip import *
 from Eff_OP_Functions import *
-from Initialization import *
+#from Initialization import *
 import h5py
 
 os.environ["PATH"] += os.pathsep + '/Library/TeX/texbin'
@@ -46,7 +46,7 @@ script_dir = os.path.dirname(__file__)
 from numba import njit, prange
 import numba as nb
 
-
+Dirname = script_dir+"/Data/Cat_to_cat"
 Ops, rho_ir, rho_ii,  rho_fr, rho_fi, params = RdParams(Dirname)
 
 q1i = expect(X,rho_i)

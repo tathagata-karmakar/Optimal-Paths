@@ -487,7 +487,7 @@ def OP_wcontrol(Initials, Ops, rho_ir, rho_ii,  l1_t, theta_t, params):
       Q5[j] = ExpVal(Ops[10], Ops[11], rhor, rhoi).item()-expP**2
       Q4[j] = ExpVal(Ops[8], Ops[9], rhor, rhoi).item()/2.0-expX*expP
 
-      Idth += params[2]*(r**2-2*r*(csth*Q1[j]+snth*Q2[j])+csth**2*expX+snth**2*expP+2*snth*csth*(Q4[j]+expX*expP))/params[3]
+      Idth += params[2]*(r**2-2*r*(csth*Q1[j]+snth*Q2[j])+csth**2*(expX**2+Q3[j])+snth**2*(expP**2+Q5[j])+2*snth*csth*(Q4[j]+expX*expP))/(2*params[3])
       if (j<len(params[1])-1):
           theta1 = theta_t[j+1]
           #thetai = theta_ti[istep+1]
@@ -702,6 +702,51 @@ def OP_stochastic_trajectory_JAX(dWt, Ops, rho_ir, rho_ii, rho_fr, rho_fi,  l1_t
   Idth = 0.0
   dWt, Ops, rhor, rhoi, l1_t, theta_t, r_t, Idth, params, k1 = jax.lax.fori_loop(0, len(params[1])-1, OP_trajectory_JAX,(dWt, Ops, rhor, rhoi, l1_t, theta_t, r_t, Idth, params, k1))
   return Fidelity_PS(rhor, rhoi, rho_fr, rho_fi), jnp.sqrt(Idth/params[1][-1])
+
+def OP_stochastic_trajectory(Ops, rho_ir, rho_ii, l1_t, theta_t, params):
+  rhor = rho_ir
+  rhoi = rho_ii
+  j=0
+  ts = params[1]
+  Q1 = np.zeros(len(ts))
+  Q2 = np.zeros(len(ts))
+  Q3 = np.zeros(len(ts))
+  Q4 = np.zeros(len(ts))
+  Q5 = np.zeros(len(ts))
+  #theta_t = np.zeros(len(ts))
+  #l1_t = np.zeros(len(ts))
+  readout = np.zeros(len(ts))
+  #Xjump2 = np.matmul(X, X)
+  #Pjump2 = np.matmul(P, P)
+  #Cxp2 = np.matmul(X, P)+np.matmul(P,X)
+  while (j<len(params[1])):
+      #print (j, len(params[1]))
+      t = ts[j]
+      theta = theta_t[j]
+      l1 = l1_t[j]
+      #H1 = H+l1*X2
+      csth, snth = np.cos(theta), np.sin(theta)
+      Q1[j], Q2[j], Q3[j], Q4[j], Q5[j] = vars_calc(Ops, rhor, rhoi)
+      #expX = np.trace(np.matmul(X, rho)).real
+      #expP = np.trace(np.matmul(P, rho)).real
+      #Ljump = csth*X+snth*P
+      #Ljump2 = np.matmul(Ljump,Ljump)
+      #Q1[j] = expX
+      #Q2[j] = expP
+      #Q3[j] = np.trace(np.matmul(X2,rho)).real-expX**2
+      #Q5[j] = np.trace(np.matmul(P2,rho)).real-expP**2
+      #Q4[j] = np.trace(np.matmul(CXP,rho)).real/2.0-expX*expP
+      expL = csth*Q1[j] + snth*Q2[j]
+      dW = np.random.normal(scale=np.sqrt(params[2]))
+      r = expL+np.sqrt(params[3])*dW/params[2]
+      readout[j] = r
+      Fr, Fi = M_stochastic_step(Ops, r, csth, snth,  l1, params)
+      if (j<len(ts)-1):
+          rhor, rhoi = rho_kraus_update(rhor, rhoi, Ops[12]+Fr, Fi)
+
+      j+=1
+  #Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5 = jax.lax.fori_loop(0, len(ts), rho_integrate_JAX,(Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5))
+  return Q1,Q2,Q3,Q4,Q5, rhor, rhoi, readout
 
 def RdParams(Dirname):
     with h5py.File(Dirname+'/Parameters.hdf5', 'r') as f:

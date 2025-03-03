@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+    #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Sun Dec  8 17:36:13 2024
@@ -53,36 +53,24 @@ script_dir = os.path.dirname(__file__)
 #import torchvision.models as models
 ##torch.backends.cuda.cufft_plan_cache[0].max_size = 32
 #torch.autograd.set_detect_anomaly(True)
+
+
 Dirname = script_dir+"/Data/Cat_to_ground"
 Ops, rho_ir, rho_ii,  rho_fr, rho_fi, params = RdParams(Dirname)
 Q1i, Q2i, Q3i, Q4i, Q5i = vars_calc(Ops, rho_ir, rho_ii)
 Q1f, Q2f, Q3f, Q4f, Q5f = vars_calc(Ops, rho_fr, rho_fi)
+
 with h5py.File(Dirname+'/Optimal_control_solution.hdf5', 'r') as f:
-    Initvals = np.array(f['Initvals'])
-    l1_t = np.array(f['l1_t'])
-    theta_t = np.array(f['theta_t'])
-    Q1t = np.array(f['Q1t'])
-    Q2t = np.array(f['Q2t'])
-    Q3t = np.array(f['Q3t'])
-    Q4t = np.array(f['Q4t'])
-    Q5t = np.array(f['Q5t'])
-    rop_stratj = np.array(f['ML_readouts'])
-
-'''
-G100 = np.matmul(np_Idmat[0], Initvals)
-G010 = np.matmul(np_Idmat[1], Initvals)
-k100 = np.matmul(np_Idmat[2], Initvals)
-k010 = np.matmul(np_Idmat[3], Initvals)
-G200 = np.matmul(np_Idmat[4], Initvals)
-G110 = np.matmul(np_Idmat[5], Initvals)
-G020 = np.matmul(np_Idmat[6], Initvals)
-k200 = np.matmul(np_Idmat[7], Initvals)
-k110 = np.matmul(np_Idmat[8], Initvals)
-k020 = np.matmul(np_Idmat[9], Initvals)
-#rho_f_simul1, X_simul1, P_simul1, varX_simul1, covXP_simul1, varP_simul1, rop_strat,nbar, theta_t = OPsoln_control_l10(X, P, H, rho_i, alr, ali, A, B, Cv, k0r, k0i, Dvp, Dvm, ts,   tau, 1)
-#rho_f_simuld, X_simuld, P_simuld, varX_simuld, covXP_simuld, varP_simuld, rop_stratd,nbard = OPsoln_strat_SHO(X, P, H, rho_i, alr, ali, A, B, ts, theta_t,  tau, 1)# OPsoln_control_l10(X, P, H, rho_i, alr, ali, A, B, Cv, k0r, k0i, Dvp, Dvm, ts,   tau, 1)
-'''
-
+        Initvals = np.array(f['Initvals'])
+        l1_t = np.array(f['l1_t'])
+        theta_t = np.array(f['theta_t'])
+        Q1t = np.array(f['Q1t'])
+        Q2t = np.array(f['Q2t'])
+        Q3t = np.array(f['Q3t'])
+        Q4t = np.array(f['Q4t'])
+        Q5t = np.array(f['Q5t'])
+        rop_stratj = np.array(f['ML_readouts'])
+        fid = np.array(f['Final_fidelity'])
 
 #Q1j1, Q2j1, Q3j1, Q4j1, Q5j1, rho_f_simul2r, rho_f_simul2i, rop_stratj, Jval = OP_wcontrol(jnp.array(Initvals)[:10], Ops, rho_ir, rho_ii,  l1_t, theta_t, params)
 
@@ -155,4 +143,4 @@ axs[3,1].set_ylabel(r'$\lambda_1^\star$',fontsize=15)
 axs[3,1].tick_params(labelsize=14)
 
 plt.subplots_adjust(wspace=0.22, hspace=0.08)
-plt.savefig(Dirname+'/Plots/OC_plot.pdf',bbox_inches='tight')
+#plt.savefig(Dirname+'/Plots/OC_plot.pdf',bbox_inches='tight')

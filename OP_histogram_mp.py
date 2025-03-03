@@ -68,7 +68,7 @@ def OP_ST_JAX(dWs, Ops, rho_ir, rho_ii, rho_fr, rho_fi, l10i, theta0i, rOP, newp
         return local_f(dWs, Ops, rho_ir, rho_ii, rho_fr, rho_fi, l10i, theta0i, rOP, newparams)
 
 if __name__=="__main__":
-    Dirname = script_dir+"/Data/Cat_to_ground"
+    Dirname = script_dir+"/Data/Cat_to_cat"
     Ops, rho_ir, rho_ii,  rho_fr, rho_fi, params = RdParams(Dirname)
     '''
     with h5py.File(Dirname+'/Parameters.hdf5', 'r') as f:
@@ -114,8 +114,8 @@ if __name__=="__main__":
     newparams = (params[0], tsi, tsi[1]-tsi[0], params[3], params[4])
     #Q1j1, Q2j1, Q3j1, Q4j1, Q5j1, rho_f_simul2r, rho_f_simul2i, rOCi = OP_wcontrol(jnp.array(Initvals), Ops, rho_ir, rho_ii,  l1_ti, theta_ti, newparams)
     #Q1j1, Q2j1, Q3j1, Q4j1, Q5j1, rho_f_simul2r, rho_f_simul2i, rACi = OP_wcontrol(jnp.array(Initvals)[:10], Ops, rho_ir, rho_ii,  l10i, theta0i, newparams)
-    batchsize = 500
-    ns = 2
+    batchsize = 2000
+    ns = 5
     samplesize = ns*batchsize
     #fidelitiesC = np.zeros(samplesize)
     #fidelities_OC = np.zeros(samplesize)

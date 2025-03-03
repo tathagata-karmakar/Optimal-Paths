@@ -70,7 +70,7 @@ from pathlib import Path
 #torch.autograd.set_detect_anomaly(True)
 
 
-Dirname = script_dir+"/Data/testing"
+Dirname = script_dir+"/Data/Coherent_to_ground"
 Path(Dirname).mkdir(parents=True, exist_ok=True)
 Path(Dirname+'/Plots').mkdir(parents=True, exist_ok=True)
 
@@ -95,8 +95,8 @@ xiR = r_sq*(q5f-q3f)/(2*snh2r)
 xiI = r_sq*(-q4f)/snh2r
 fin_alr = 1.35
 fin_ali = -0.75
-in_alr = 0.25#-0.1#in_alr*np.cos(t_f)+in_ali*np.sin(t_f)
-in_ali = -0.75#0.5#in_ali*np.cos(t_f)-in_alr*np.sin(t_f)
+in_alr = -0.15#-0.1#in_alr*np.cos(t_f)+in_ali*np.sin(t_f)
+in_ali = 0.25#0.5#in_ali*np.cos(t_f)-in_alr*np.sin(t_f)
 
 '''
 Initial and final states
@@ -107,10 +107,10 @@ eps =0.1
 rho_f = basis(nlevels, 0)#+basis(nlevels,4))/np.sqrt(2)
 #rho_f = (basis(nlevels, 0)+basis(nlevels,4))/np.sqrt(2)
 #rho_i = (basis(nlevels, 0)+np.sqrt(3)*basis(nlevels,4))/np.sqrt(4)
-rho_i=coherent(nlevels, in_alr+1j*in_ali)+coherent(nlevels, -in_alr-1j*in_ali)#(coherent(nlevels, in_alr+1j*in_ali)+coherent(nlevels, -in_alr-1j*in_ali))/np.sqrt(2)
+#rho_i=coherent(nlevels, in_alr+1j*in_ali)+coherent(nlevels, -in_alr-1j*in_ali)#(coherent(nlevels, in_alr+1j*in_ali)+coherent(nlevels, -in_alr-1j*in_ali))/np.sqrt(2)
 #rho_f = basis(nlevels, 0)#+coherent(nlevels, -in_alr-1j*in_ali))#coherent(nlevels, fin_alr+1j*fin_ali)
 #rho_f = squeeze(nlevels,  xiR+1j*xiI)*coherent(nlevels, fin_alr+1j*fin_ali)
-#rho_f_int = squeeze(nlevels,  xiR*np.cos(2*t_f)-xiI*np.sin(2*t_f)+1j*(xiI*np.cos(2*t_f)+xiR*np.sin(2*t_f)))*coherent(nlevels, fin_alr*np.cos(t_f)-fin_ali*np.sin(t_f)+1j*(fin_ali*np.cos(t_f)+fin_alr*np.sin(t_f)))
+rho_i=coherent(nlevels, in_alr+1j*in_ali)
 rho_2 = (basis(nlevels,0)+basis(nlevels,4))/np.sqrt(2)
 rho_1 =(basis(nlevels,0)-basis(nlevels,4))/np.sqrt(2)
 
@@ -171,8 +171,8 @@ params = (l1max, ts, dt, tau, Idmat)
 
 Q1i1, Q2i1, Q3i1, Q4i1, Q5i1 = vars_calc(Ops, rho_ir, rho_ii)
 
-print (Q1i, Q2i, Q3i, Q4i, Q5i)
-print (Q1i1, Q2i1, Q3i1, Q4i1, Q5i1)
+print ('Moments: ', Q1i, Q2i, Q3i, Q4i, Q5i)
+print ('Moment check: ', Q1i1, Q2i1, Q3i1, Q4i1, Q5i1)
 
 with h5py.File(Dirname+"/Parameters.hdf5", "w") as f:
     dset1 = f.create_dataset("nlevels", data = nlevels, dtype ='int')
