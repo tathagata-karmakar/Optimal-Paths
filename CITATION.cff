@@ -1,0 +1,26 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: CDJ-P Monitored Oscillator Quantum Optimal Control Codes
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Karmakar
+    family-names: Tathagata
+    name-suffix: Dr
+    email: tatha.karma@gmail.com
+    affiliation: 'University of California, Berkeley'
+    orcid: 'https://orcid.org/0000-0001-8781-2017'
+repository-code: 'https://github.com/tathagata-karmakar/Optimal-Paths'
+keywords:
+  - quantum control
+  - continuous measurements
+  - quantum optimal control
+  - simple harmonic oscillator
+license: CC-BY-4.0
+commit: 68a550f
+version: 1.0.0
+date-released: '2025-03-24'
