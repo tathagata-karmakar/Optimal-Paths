@@ -22,6 +22,7 @@ from matplotlib import colors
 from qutip import *
 from Eff_OP_Functions import *
 #from Initialization  import *
+import matplotlib.ticker as ticker
 import h5py
 os.environ["PATH"] += os.pathsep + '/Library/TeX/texbin'
 rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
@@ -54,7 +55,7 @@ import optax
 ##torch.backends.cuda.cufft_plan_cache[0].max_size = 32
 #torch.autograd.set_detect_anomaly(True)
 
-Dirname = script_dir+"/Data/Cat_to_ground"
+Dirname = script_dir+"/Data/Binomial"
 with h5py.File(Dirname+'/Histogram.hdf5', 'r') as f:
     fidelities0 = np.array(f['Fidelities_wo_control'])
     fidelities_OP = np.array(f['Fidelities_w_control'])
@@ -65,13 +66,18 @@ with h5py.File(Dirname+'/Histogram.hdf5', 'r') as f:
 
 
 fig, ax = plt.subplots(figsize=(6,4))
-
+xtks = np.linspace(0.4,1, 11)
 bins = np.linspace(0,1,50)
 ax.hist(fidelities_OP, bins=bins, label = 'Optimal control', hatch ='|')
 ax.hist(fidelities0, bins = bins, label="Sample control", alpha = 0.6, hatch ='\\')
 ax.set_xlabel(r'$\mathcal{F}\left(\hat{\rho}_f,\hat{\rho}(t_f)\right)$', fontsize=18)
 ax.set_ylabel('Number of Trajectories', fontsize=18)
-ax.tick_params(labelsize=15)
+
 ax.legend(loc=2,fontsize=15)
-ax.set_xlim(0.3,1)
+ax.set_xlim(0.35,1)
+vs = ax.get_xticks()
+#ax.set_xticks(np.append(vs[:-1], 0.95))
+ax.tick_params(labelsize=15)
+
+#ax.xaxis.set_major_formatter(ticker.FormatStrFormatter('%0.1f'))
 #plt.savefig(Dirname+'/Plots/histogram.pdf',bbox_inches='tight')

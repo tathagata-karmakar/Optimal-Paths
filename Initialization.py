@@ -70,7 +70,7 @@ from pathlib import Path
 #torch.autograd.set_detect_anomaly(True)
 
 
-Dirname = script_dir+"/Data/Coherent_to_ground"
+Dirname = script_dir+"/Data/testing2"
 Path(Dirname).mkdir(parents=True, exist_ok=True)
 Path(Dirname+'/Plots').mkdir(parents=True, exist_ok=True)
 
@@ -95,22 +95,22 @@ xiR = r_sq*(q5f-q3f)/(2*snh2r)
 xiI = r_sq*(-q4f)/snh2r
 fin_alr = 1.35
 fin_ali = -0.75
-in_alr = -0.15#-0.1#in_alr*np.cos(t_f)+in_ali*np.sin(t_f)
-in_ali = 0.25#0.5#in_ali*np.cos(t_f)-in_alr*np.sin(t_f)
+in_alr = -0.25#-0.1#in_alr*np.cos(t_f)+in_ali*np.sin(t_f)
+in_ali = 1.55#0.5#in_ali*np.cos(t_f)-in_alr*np.sin(t_f)
 
 '''
 Initial and final states
 '''
 eps =0.1
-#rho_f= coherent(nlevels, fin_alr+1j*fin_ali)+coherent(nlevels, -fin_alr-1j*fin_ali)#basis(nlevels, 0)#squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
+rho_f= coherent(nlevels, fin_alr+1j*fin_ali)+coherent(nlevels, -fin_alr-1j*fin_ali)#basis(nlevels, 0)#squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
 #rho_i = (basis(nlevels, 0)-basis(nlevels,4))/np.sqrt(2)
-rho_f = basis(nlevels, 0)#+basis(nlevels,4))/np.sqrt(2)
+#rho_f = basis(nlevels, 0)#+basis(nlevels,4))/np.sqrt(2)
 #rho_f = (basis(nlevels, 0)+basis(nlevels,4))/np.sqrt(2)
 #rho_i = (basis(nlevels, 0)+np.sqrt(3)*basis(nlevels,4))/np.sqrt(4)
-#rho_i=coherent(nlevels, in_alr+1j*in_ali)+coherent(nlevels, -in_alr-1j*in_ali)#(coherent(nlevels, in_alr+1j*in_ali)+coherent(nlevels, -in_alr-1j*in_ali))/np.sqrt(2)
+rho_i=coherent(nlevels, in_alr+1j*in_ali)+coherent(nlevels, -in_alr-1j*in_ali)#(coherent(nlevels, in_alr+1j*in_ali)+coherent(nlevels, -in_alr-1j*in_ali))/np.sqrt(2)
 #rho_f = basis(nlevels, 0)#+coherent(nlevels, -in_alr-1j*in_ali))#coherent(nlevels, fin_alr+1j*fin_ali)
 #rho_f = squeeze(nlevels,  xiR+1j*xiI)*coherent(nlevels, fin_alr+1j*fin_ali)
-rho_i=coherent(nlevels, in_alr+1j*in_ali)
+#rho_i=coherent(nlevels, in_alr+1j*in_ali)
 rho_2 = (basis(nlevels,0)+basis(nlevels,4))/np.sqrt(2)
 rho_1 =(basis(nlevels,0)-basis(nlevels,4))/np.sqrt(2)
 

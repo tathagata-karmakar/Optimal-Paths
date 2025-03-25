@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Feb 25 21:16:29 2025
+Created on Tue Mar  4 19:35:32 2025
 
 @author: tatha_k
 """
+
 import os,sys
 os.environ['JAX_PLATFORMS'] = 'cpu'
 #os.environ['JAX_DISABLE_JIT'] = '1'
@@ -93,17 +94,18 @@ if __name__=="__main__":
         theta_t = np.array(f['theta_t'])
         rOC = np.array(f['ML_readouts'])
         JOC = np.array(f['Jval']).item()
+        #rho_fr = np.array(f['rho_f_simulr'])
+        #rho_fi = np.array(f['rho_f_simuli'])
         
 
-    with h5py.File(Dirname+'/Alternate_control.hdf5', 'r') as f:
+    with h5py.File(Dirname+'/AC_testing.hdf5', 'r') as f:
         Initvals_s = np.array(f['Initials_sample'])
         l10 = np.array(f['l1_t_sample'])
         theta0 = np.array(f['theta_t_sample'])
         rAC = np.array(f['ML_readouts'])
         JAC = np.array(f['Jval']).item()
         
-    print ("J_OC =", JOC)
-    print ("J_AC =", JAC)
+
     tsi = np.linspace(params[1][0], params[1][-1], 5*len(params[1]))
     l1_ti = np.interp(tsi, params[1], l1_t)
     rOCi = np.interp(tsi, params[1], rOC)
@@ -115,8 +117,8 @@ if __name__=="__main__":
     newparams = (params[0], tsi, tsi[1]-tsi[0], params[3], params[4])
     #Q1j1, Q2j1, Q3j1, Q4j1, Q5j1, rho_f_simul2r, rho_f_simul2i, rOCi = OP_wcontrol(jnp.array(Initvals), Ops, rho_ir, rho_ii,  l1_ti, theta_ti, newparams)
     #Q1j1, Q2j1, Q3j1, Q4j1, Q5j1, rho_f_simul2r, rho_f_simul2i, rACi = OP_wcontrol(jnp.array(Initvals)[:10], Ops, rho_ir, rho_ii,  l10i, theta0i, newparams)
-    batchsize = 1000
-    ns = 10
+    batchsize = 500
+    ns = 2
     samplesize = ns*batchsize
     #fidelitiesC = np.zeros(samplesize)
     #fidelities_OC = np.zeros(samplesize)
@@ -161,7 +163,7 @@ if __name__=="__main__":
     ax[2].scatter(dataOC[:,0], dataOC[:,1])
     ax[0].set_xlabel(r'$\mathcal{F}\left(\hat{\rho}_f,\hat{\rho}(t_f)\right)$')
     
-    with h5py.File(Dirname+"/Histogram.hdf5", "w") as f:
+    with h5py.File(Dirname+"/Histogram_testing.hdf5", "w") as f:
         dset1 = f.create_dataset("Fidelities_wo_control", data = dataC[:,0])
         dset2 = f.create_dataset("Fidelities_w_control", data = dataOC[:,0])
         dset3 = f.create_dataset("Deviations_wo_control", data = dataC[:,1])

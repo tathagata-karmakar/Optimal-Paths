@@ -55,7 +55,7 @@ script_dir = os.path.dirname(__file__)
 #torch.autograd.set_detect_anomaly(True)
 
 
-Dirname = script_dir+"/Data/Cat_to_ground"
+Dirname = script_dir+"/Data/Cat_to_cat2"
 Ops, rho_ir, rho_ii,  rho_fr, rho_fi, params = RdParams(Dirname)
 Q1i, Q2i, Q3i, Q4i, Q5i = vars_calc(Ops, rho_ir, rho_ii)
 Q1f, Q2f, Q3f, Q4f, Q5f = vars_calc(Ops, rho_fr, rho_fi)
@@ -71,6 +71,7 @@ with h5py.File(Dirname+'/Optimal_control_solution.hdf5', 'r') as f:
         Q5t = np.array(f['Q5t'])
         rop_stratj = np.array(f['ML_readouts'])
         fid = np.array(f['Final_fidelity'])
+        Jval = np.array(f['Jval'])
 
 #Q1j1, Q2j1, Q3j1, Q4j1, Q5j1, rho_f_simul2r, rho_f_simul2i, rop_stratj, Jval = OP_wcontrol(jnp.array(Initvals)[:10], Ops, rho_ir, rho_ii,  l1_t, theta_t, params)
 

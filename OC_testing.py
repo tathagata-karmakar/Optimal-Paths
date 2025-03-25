@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Aug 13 08:55:01 2024
+Created on Tue Mar  4 16:15:19 2025
 
-@author: t_karmakar
+@author: tatha_k
 """
 
 import os,sys
-os.environ['JAX_PLATFORMS'] = 'cpu'
 import time
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -23,7 +22,6 @@ from matplotlib import colors
 from qutip import *
 from Eff_OP_Functions import *
 #from Initialization import *
-#from Triangle_Fns import *
 import h5py
 os.environ["PATH"] += os.pathsep + '/Library/TeX/texbin'
 rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
@@ -44,8 +42,7 @@ from typing import Iterable
 from jaxopt import OptaxSolver
 import optax
 script_dir = os.path.dirname(__file__)
-from numba import njit, prange
-import numba as nb
+
 
 #import torch
 #from torch import nn
@@ -56,9 +53,30 @@ import numba as nb
 #import torchvision.models as models
 ##torch.backends.cuda.cufft_plan_cache[0].max_size = 32
 #torch.autograd.set_detect_anomaly(True)
+
+
 Dirname = script_dir+"/Data/testing2"
 Ops, rho_ir, rho_ii,  rho_fr, rho_fi, params = RdParams(Dirname)
+Q1i, Q2i, Q3i, Q4i, Q5i = vars_calc(Ops, rho_ir, rho_ii)
+Q1f, Q2f, Q3f, Q4f, Q5f = vars_calc(Ops, rho_fr, rho_fi)
 
+with h5py.File(Dirname+'/Optimal_control_solution.hdf5', 'r') as f:
+        Initvals = np.array(f['Initvals'])
+        l1_t = np.array(f['l1_t'])
+        theta_t = np.array(f['theta_t'])
+        Q1t = np.array(f['Q1t'])
+        Q2t = np.array(f['Q2t'])
+        Q3t = np.array(f['Q3t'])
+        Q4t = np.array(f['Q4t'])
+        Q5t = np.array(f['Q5t'])
+        rop_stratj = np.array(f['ML_readouts'])
+        fid = np.array(f['Final_fidelity'])
+        Jval = np.array(f['Jval'])
+        rho_fr = np.array(f['rho_f_simulr'])
+        rho_fi = np.array(f['rho_f_simuli'])
+        
+        
+        
 Q1i = ExpVal(Ops[0], Ops[1], rho_ir, rho_ii).item()#expect(X,rho_i)
 Q2i = ExpVal(Ops[2], Ops[3], rho_ir, rho_ii).item()
 Q3i = ExpVal(Ops[6], Ops[7], rho_ir, rho_ii).item()-Q1i**2
@@ -105,25 +123,24 @@ jnpl1_t = jnp.array(l1_t)
 cost_b, J_b, rhotmpr, rhotmpi = CostF_control_l101(Initials, Ops, rho_ir, rho_ii, rho_fr, rho_fi,  params)
 Initials_c, cost_c, J_c = Initials, cost_b, J_b
 step_size = 0.1
-
 #temp = temp0
 metropolis = 1.0
 tempf = 0.005
-tempi = 1.0
+tempi = 2000.0
 temp = tempi
 lrate = 1e-2
 
 #for n in range(nsteps):
-nsteps = 5000
+nsteps = 2000
 n=0
 nbest = 0
 stime = time.time()
 while temp>tempf and (n<nsteps):
-  #print (n)
+  print (n)
   #stime = time.time()
   Initials_n = Initials_c+step_size*jnp.array(np.random.rand(10)-0.5)
   cost_n, J_n, rhotmpr, rhotmpi = CostF_control_l101(Initials_n, Ops, rho_ir, rho_ii, rho_fr, rho_fi, params)
-  if (-cost_b<0.9):
+  if (-cost_b<0.999):
       if (cost_n<cost_b):
           Initials, cost_b, J_b = Initials_n, cost_n, J_n
           nbest = n
@@ -147,7 +164,7 @@ while temp>tempf and (n<nsteps):
       #print (diff, diff2)
       metropolis = jnp.exp(-100*(diff+diff2)/temp)
       #metropolis2 = jnp.exp(-50*diff2/temp)
-      if ((diff<0) and(diff2<0)) or ((jnp.array(np.random.rand())<metropolis)):
+      if ((diff<0) and (diff2<0)) or ((jnp.array(np.random.rand())<metropolis)):
           Initials_c, cost_c, J_c = Initials_n, cost_n, J_n
           temp = temp/(1+0.02*temp)
       else:
@@ -156,7 +173,7 @@ while temp>tempf and (n<nsteps):
       #cost_b, J_b = CostF_control_l101(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId)
       
   n+=1
-  step_size = step_size/(1+0.0001*step_size)
+  step_size = step_size/(1+0.0001*step_size*0)
   print (nbest, n,  -cost_b, J_b, temp, metropolis)
 
 print ('TT: ', time.time()-stime)  
@@ -171,7 +188,7 @@ fid  = Fidelity_PS(rho_f_simul2r, rho_f_simul2i, rho_fr, rho_fi).item()
 print (time.time()-stime, fid)
 
 
-with h5py.File(Dirname+"/Optimal_control_solution.hdf5", "w") as f:
+with h5py.File(Dirname+"/OC_solution_testing.hdf5", "w") as f:
     dset1 = f.create_dataset("theta_t", data = theta_tj)
     dset2 = f.create_dataset("l1_t", data = l1_tj)
     dset3 = f.create_dataset("r_t", data = rop_stratj)

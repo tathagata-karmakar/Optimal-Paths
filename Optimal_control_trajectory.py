@@ -53,7 +53,7 @@ import optax
 #import torchvision.models as models
 ##torch.backends.cuda.cufft_plan_cache[0].max_size = 32
 #torch.autograd.set_detect_anomaly(True)
-Dirname = script_dir+"/Data/Cat_to_cat"
+Dirname = script_dir+"/Data/Cat_to_cat2"
 with h5py.File(Dirname+'/Optimal_control_solution.hdf5', 'r') as f:
     #Initvals = np.array(f['Initvals'])
     l1_t = np.array(f['l1_t'])

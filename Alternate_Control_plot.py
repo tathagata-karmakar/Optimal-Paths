@@ -53,7 +53,7 @@ import optax
 #import torchvision.models as models
 ##torch.backends.cuda.cufft_plan_cache[0].max_size = 32
 #torch.autograd.set_detect_anomaly(True)
-Dirname = script_dir+"/Data/Cat_to_ground"
+Dirname = script_dir+"/Data/Cat_to_cat2"
 Ops, rho_ir, rho_ii,  rho_fr, rho_fi, params = RdParams(Dirname)
 ts = params[1]
 
@@ -63,6 +63,7 @@ with h5py.File(Dirname+'/Alternate_control.hdf5', 'r') as f:
     l10 = np.array(f['l1_t_sample'])
     theta0 = np.array(f['theta_t_sample'])
     fid = np.array(f['Final_fidelity'])
+    Jval = np.array(f["Jval"])
 
 fig, axs = plt.subplots(2,1,figsize=(6,4),sharex='all')
 axs[0].tick_params(labelsize=14)

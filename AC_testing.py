@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue May 14 13:23:37 2024
+Created on Tue Mar  4 19:27:13 2025
 
-@author: t_karmakar
+@author: tatha_k
 """
 
 import os,sys
@@ -23,7 +23,6 @@ from qutip import *
 from Eff_OP_Functions import *
 #from Initialization import *
 import h5py
-
 os.environ["PATH"] += os.pathsep + '/Library/TeX/texbin'
 rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
 rc('text',usetex=True)
@@ -43,8 +42,18 @@ from typing import Iterable
 from jaxopt import OptaxSolver
 import optax
 script_dir = os.path.dirname(__file__)
-from numba import njit, prange
-import numba as nb
+
+
+#import torch
+#from torch import nn
+#from torch.utils.data import DataLoader,Dataset
+#from torchvision import datasets
+#from torchvision.io import read_image
+#from torchvision.transforms import ToTensor, Lambda
+#import torchvision.models as models
+##torch.backends.cuda.cufft_plan_cache[0].max_size = 32
+#torch.autograd.set_detect_anomaly(True)
+
 
 Dirname = script_dir+"/Data/testing2"
 Ops, rho_ir, rho_ii,  rho_fr, rho_fi, params = RdParams(Dirname)
@@ -82,16 +91,16 @@ for n in range(nsteps):
 #params = (l1max, ts, dt, tau, Idmat)
 cost_b, J_b, rho_f_simulr, rho_f_simuli = CostF_control_generate(Initials, Ops, rho_ir, rho_ii, rho_fr, rho_fi, jnp_theta_mat, jnp_l1_mat, params, Nc, jnp_MMat)
 Initials_c, cost_c, J_c = Initials, cost_b, J_b
-step_size = 0.1
+step_size = 1.0
 #temp = temp0
 metropolis = 1.0
 tempf = 0.005
-tempi = 1.0
+tempi = 2000.0
 temp = tempi
 lrate = 1e-2
 
 #for n in range(nsteps):
-nsteps = 5000
+nsteps = 2000
 n=0
 nbest = 0
 diff = 0
@@ -100,22 +109,38 @@ while temp>tempf and (n<nsteps):
   stime = time.time()
   Initials_n = Initials_c+step_size*jnp.array(np.random.rand(nvars+4*Nc)-0.5)
   cost_n, J_n, rho_nr, rho_ni = CostF_control_generate(Initials_n, Ops, rho_ir, rho_ii, rho_fr, rho_fi,  jnp_theta_mat, jnp_l1_mat, params, Nc, jnp_MMat)
-  if (cost_n<cost_b):
-      #if cost_n<=2.0 and  (J_n<=J_b):
-          #Initials, cost_b, J_b = Initials_n, cost_n, J_n
-      #elif cost_n>2.0:
-      Initials, cost_b, J_b, rho_f_simulr, rho_f_simuli = Initials_n, cost_n, J_n, rho_nr, rho_ni
-      nbest = n
-  print (nbest, n,  -cost_b, J_b, metropolis, temp) #Cost is the negative of fidelity
-  diff = cost_n-cost_c
-  metropolis = jnp.exp(-100*diff/temp)
-  if (diff<0) or (jnp.array(np.random.rand())<metropolis):
-      Initials_c, cost_c, J_c = Initials_n, cost_n, J_b
-      temp = temp/(1+0.02*temp)
+  if (-cost_b<0.8):
+      if (cost_n<cost_b):
+          #if cost_n<=2.0 and  (J_n<=J_b):
+              #Initials, cost_b, J_b = Initials_n, cost_n, J_n
+          #elif cost_n>2.0:
+          Initials, cost_b, J_b, rho_f_simulr, rho_f_simuli = Initials_n, cost_n, J_n, rho_nr, rho_ni
+          nbest = n
+      print (nbest, n,  -cost_b, J_b, metropolis, temp) #Cost is the negative of fidelity
+      diff = cost_n-cost_c
+      metropolis = jnp.exp(-100*diff/temp)
+      if (diff<0) or (jnp.array(np.random.rand())<metropolis):
+          Initials_c, cost_c, J_c = Initials_n, cost_n, J_n
+          temp = temp/(1+0.02*temp)
+      else:
+          temp = temp/(1-0.0002*temp) 
   else:
-      temp = temp/(1-0.0002*temp)    
-  #Initials = update_control2_l10(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId, lrate)
-  #cost_b, J_b = CostF_control_l101(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, Idmat, jnpId)
+       if (J_n<J_b) and (cost_n<cost_b):
+           #if cost_n<=2.0 and  (J_n<=J_b):
+               #Initials, cost_b, J_b = Initials_n, cost_n, J_n
+           #elif cost_n>2.0:
+           Initials, cost_b, J_b, rho_f_simulr, rho_f_simuli = Initials_n, cost_n, J_n, rho_nr, rho_ni
+           nbest = n
+       print (nbest, n,  -cost_b, J_b, metropolis, temp) #Cost is the negative of fidelity
+       diff = cost_n-cost_c
+       diff2 = J_n-J_c
+       metropolis = jnp.exp(-100*(diff+diff2)/temp)
+       if ((diff<0) and (diff2<0)) or (jnp.array(np.random.rand())<metropolis):
+           Initials_c, cost_c, J_c = Initials_n, cost_n, J_n
+           temp = temp/(1+0.02*temp)
+       else:
+           temp = temp/(1-0.0002*temp) 
+         
   n+=1
   step_size = step_size/(1+0.0001*step_size)  
   
@@ -128,7 +153,7 @@ l1_t = (l1max)*jnp.tanh(jnp.matmul(l1_mat,Initials)/l1max)
 Q1j1, Q2j1, Q3j1, Q4j1, Q5j1, rho_f_simul2r, rho_f_simul2i, rop_stratj, Jval = OP_wcontrol(jnp.array(Initvals)[:10], Ops, rho_ir, rho_ii,  l1_t, theta_t, params)
 fid  = Fidelity_PS(rho_f_simul2r, rho_f_simul2i, rho_fr, rho_fi).item()
 print (fid)
-with h5py.File(Dirname+"/Alternate_control.hdf5", "w") as f:
+with h5py.File(Dirname+"/AC_testing.hdf5", "w") as f:
     dset1 = f.create_dataset("theta_t_sample", data = theta_t)
     dset2 = f.create_dataset("l1_t_sample", data = l1_t)
     dset3 = f.create_dataset("Initials_sample", data = Initvals)

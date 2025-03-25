@@ -624,8 +624,9 @@ def rho_update_control_generate(i, Input_Initials): #Optimal control integration
     csthi, snthi = jnp.cos(thetai), jnp.sin(thetai)
     csth1, snth1 = jnp.cos(theta1), jnp.sin(theta1)
     rhor1, rhoi1, G1s1 = RK4_wcontrol(Ops, rhor, rhoi, G1s, csth, snth, l1, csthi, snthi, l1i, csth1, snth1, l11, params)
-  
-    Idth1 = Idth#+dt*(theta_star-theta)**2
+    Q1, Q2, Q3, Q4, Q5 = vars_calc(Ops, rhor, rhoi)
+    r = jnp.array([csth, snth, 0, 0]) @ G1s
+    Idth1 = Idth+params[2]*(r**2-2*r*(csth*Q1+snth*Q2)+csth**2*(Q1**2+Q3)+snth**2*(Q2**2+Q5)+2*snth*csth*(Q4+Q1*Q2))/(2*params[3])
   #Idth1 = -(-(GLL-w**2/4.0)/(2*tau)-(kappaLL+2*r*w)/2.0-(kappaMM+2*v*z)/2.0)
     return (Initials, Ops, rhor1, rhoi1, G1s1, Idth1, theta_t, l1_t, params, j+1, Ncos)
 
@@ -643,7 +644,7 @@ def MLP_control_generate(Initials, Ops, rho_ir, rho_ii, theta_t, l1_t, params, N
   Idth=0
   Initials, Ops, rhor, rhoi, G1s, Idth,  theta_t, l1_t, params, k1, Ncos = jax.lax.fori_loop(0, len(params[1])-1, rho_update_control_generate,(Initials, Ops, rhor, rhoi, G1s, Idth,  theta_t, l1_t, params, k1, Ncos))
   #rho_update(Initials, X, P, H, X2, P2, XP, PX, rho, I_tR, I_tI, i, theta_t, ts, tau, dt)
-  return rhor, rhoi
+  return rhor, rhoi, Idth
 
 @jit
 def CostF_control_generate(Initials, Ops, rho_ir, rho_ii, rho_fr, rho_fi, theta_mat, l1_mat, params, Ncos, MMat):
@@ -651,9 +652,9 @@ def CostF_control_generate(Initials, Ops, rho_ir, rho_ii, rho_fr, rho_fi, theta_
     l1_t = l1_mat @ Initials
     theta_t = (np.pi/2.0)*jnp.tanh(2*theta_t/np.pi)
     l1_t = (params[0])*jnp.tanh(l1_t/params[0])
-    rho_f_simulr, rho_f_simuli =  MLP_control_generate(Initials, Ops, rho_ir, rho_ii, theta_t, l1_t, params, Ncos, MMat)
+    rho_f_simulr, rho_f_simuli, Idth =  MLP_control_generate(Initials, Ops, rho_ir, rho_ii, theta_t, l1_t, params, Ncos, MMat)
     #print (Idth)
-    return Tr_Distance(rho_f_simulr, rho_f_simuli, rho_fr, rho_fi), rho_f_simulr, rho_f_simuli
+    return Tr_Distance(rho_f_simulr, rho_f_simuli, rho_fr, rho_fi), Idth, rho_f_simulr, rho_f_simuli
 
 
 def OP_trajectory_JAX(i, Input_Initials):
