@@ -55,7 +55,7 @@ import optax
 ##torch.backends.cuda.cufft_plan_cache[0].max_size = 32
 #torch.autograd.set_detect_anomaly(True)
 
-Dirname = script_dir+"/Data/Binomial"
+Dirname = script_dir+"/Data/Cat_to_ground"
 with h5py.File(Dirname+'/Histogram.hdf5', 'r') as f:
     fidelities0 = np.array(f['Fidelities_wo_control'])
     fidelities_OP = np.array(f['Fidelities_w_control'])

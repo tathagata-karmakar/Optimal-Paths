@@ -764,3 +764,63 @@ def RdParams(Dirname):
         Idmat = jnp.array(f['Idmat'])
         l1max = np.array(f['l1max']).item()
     return Ops, rho_ir, rho_ii,  rho_fr, rho_fi, (l1max, ts, ts[1]-ts[0], tau, Idmat)
+
+
+def M_stochastic_step_RR(Ops, r, expL, csth, snth,  l1, params): #Optimal control integration with \lambda_1=0
+  #csth, snth = jnp.cos(theta), jnp.sin(theta)
+  #r = jnp.array([csth, snth, 0, 0]) @ G1s
+  #G1s1, G2s1 = Del_G_k_updates(G1s, G2s, csth, snth, l1, params)
+  H1r = Ops[4]+l1*Ops[6]
+  H1i = Ops[5]+l1*Ops[7]
+  #Fac1 = r*Ljump/(2*tau)#-Ljump2/(4*tau)
+  Fac2r = (-2*params[2]+((r-expL)**2)*params[2]**2/params[3])*(Ops[6]*csth**2+csth*snth*Ops[8]+Ops[10]*snth**2)/(8*params[3])+params[2]*r*(csth*Ops[0]+snth*Ops[2])/(2*params[3])+params[2]*H1i
+  Fac2i = (-2*params[2]+((r-expL)**2)*params[2]**2/params[3])*(Ops[7]*csth**2+csth*snth*Ops[9]+Ops[11]*snth**2)/(8*params[3])+params[2]*r*(csth*Ops[1]+snth*Ops[3])/(2*params[3])-params[2]*H1r
+  return Fac2r, Fac2i#, G101, G011, k101, k011, G201, G111, G021, k201, k111, k021
+
+
+def OP_trajectory_JAX_RR(i, Input_Initials):
+    dWt, Ops, rhor, rhoi, l1_t, theta_t, r_t, Idth, params, j = Input_Initials
+    l1 = l1_t[j]
+    #print(j)
+    theta = theta_t[j]
+    rOP = r_t[j]
+    #H1 = H+l1*X2
+    csth, snth = jnp.cos(theta), jnp.sin(theta)
+    expX = ExpVal(Ops[0], Ops[1], rhor, rhoi)
+    expP = ExpVal(Ops[2], Ops[3], rhor, rhoi)
+    #Ljump = csth*X+snth*P
+    #Ljump2 = jnp.matmul(Ljump,Ljump)
+    expL = csth*expX + snth*expP
+    dW = dWt[j]
+    r = expL+jnp.sqrt(params[3])*dW/params[2]
+    Idth1 = Idth+params[2]*(r-rOP)**2
+    #delL = Ljump - expL*Id
+    #F = -jnp.matmul(delL, delL)*dt/(8*tau)+delL*dW/(2*jnp.sqrt(tau))
+    #F1 = Id+F#+jnp.matmul(F,F)/2
+    #F2 = jnp.matmul(F1,(Id-1j*H1*dt))
+    #F3 = jnp.matmul((Id+1j*H1*dt),F1)
+    #rho1 = jnp.matmul(jnp.matmul(F2,rho),F3)
+    #H1 = H+l1*X2
+    #Fac1 = r*Ljump/(2*tau)#-Ljump2/(4*tau)
+    Fr, Fi = M_stochastic_step_RR(Ops, r, expL, csth, snth,  l1, params)
+    rhor, rhoi = rho_kraus_update(rhor, rhoi, Ops[12]+Fr, Fi)
+    #Fac2 = Id-dt*(X2*csth**2+csth*snth*CXP+P2*snth**2)/(8*tau)+dr*(csth*X+snth*P)/(2*tau)
+    #rho1 = jnp.matmul(jnp.matmul(Fac2-dt*1j*H1,rho),Fac2+dt*1j*H1)
+    #tmptr = jnp.trace(rho1)
+    #rho1 = rho1/tmptr
+    #rho1 = rho1/jnp.trace(rho1)
+    #rho1 = rho+dt*(-1j*jnp.matmul(H1,rho)+1j*jnp.matmul(rho,H1)+(jnp.matmul(jnp.matmul(Ljump,rho),Ljump)-jnp.matmul(Ljump2, rho)/2.0-jnp.matmul(rho,Ljump2)/2.0)/(4*tau))+dW*(jnp.matmul(delL,rho)+jnp.matmul(rho,delL))/jnp.sqrt(4*tau)
+    return (dWt, Ops, rhor, rhoi, l1_t, theta_t, r_t, Idth1, params, j+1)
+
+
+@jit    
+def OP_stochastic_trajectory_JAX_RR(dWt, Ops, rho_ir, rho_ii, rho_fr, rho_fi,  l1_t, theta_t, r_t, params):
+  #rho = rho_i
+  rhor = rho_ir
+  rhoi = rho_ii
+  #phi = jnp.array([theta_t[0]+ts[0]])
+  #theta = jnp.array(0.0)
+  k1=0
+  Idth = 0.0
+  dWt, Ops, rhor, rhoi, l1_t, theta_t, r_t, Idth, params, k1 = jax.lax.fori_loop(0, len(params[1])-1, OP_trajectory_JAX_RR,(dWt, Ops, rhor, rhoi, l1_t, theta_t, r_t, Idth, params, k1))
+  return Fidelity_PS(rhor, rhoi, rho_fr, rho_fi), jnp.sqrt(Idth/params[1][-1])
