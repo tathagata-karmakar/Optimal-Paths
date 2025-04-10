@@ -5,6 +5,17 @@ Created on Tue Feb 25 21:16:29 2025
 
 @author: tatha_k
 """
+''' 
+This script generates histograms
+for a sample control and the optimal control for a 
+problem defined by Initialization.py. For the script to 
+work Optimal_control_l1_theta_anneal.py and Control_Generation.py
+need to be run first. Histograms are saved as a Histogram.hdf5
+file. 
+
+'''
+
+
 import os,sys
 os.environ['JAX_PLATFORMS'] = 'cpu'
 #os.environ['JAX_DISABLE_JIT'] = '1'

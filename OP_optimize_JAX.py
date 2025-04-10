@@ -6,6 +6,15 @@ Created on Fri Feb  9 14:44:46 2024
 @author: t_karmakar
 """
 
+'''
+This script finds the optimal path of an oscillator
+under position measurements and compares the results
+with those found through the Gaussian state assumption 
+See Karmakar et al., PRX Quantum 3, 010327 (2022).
+The comparison makes sense only when the initial and 
+final state are both Gaussian.
+'''
+
 import os,sys
 import time
 import matplotlib.pyplot as plt
@@ -367,6 +376,7 @@ I_tI = jnp.array([0.0])
 #jnp_rho_simul = OPsoln_JAX1(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp.array(theta_t), jnp.array(ts), dt, tau, jnpId)
 
 
+#Gradient descent
 for n in range(nsteps):
   stime = time.time()
   print (CostF_strat(Initials, jnpX, jnpP, jnpH, jnp_rho_i, jnp_rho_f, theta_t, ts, dt, tau, jnpId))

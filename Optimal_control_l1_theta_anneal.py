@@ -5,7 +5,14 @@ Created on Tue Aug 13 08:55:01 2024
 
 @author: t_karmakar
 """
+'''
 
+This script finds optimal quadrature and parametric potential for a 
+problem defined through Initialization.py
+
+The results are saved as hdf5 file titled Optimal_control_solution
+
+'''
 import os,sys
 os.environ['JAX_PLATFORMS'] = 'cpu'
 import time
@@ -113,7 +120,7 @@ tempi = 1.0
 temp = tempi
 lrate = 1e-2
 
-#for n in range(nsteps):
+#Simulated annealing
 nsteps = 5000
 n=0
 nbest = 0

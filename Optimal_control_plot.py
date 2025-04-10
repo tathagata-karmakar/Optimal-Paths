@@ -6,6 +6,15 @@ Created on Sun Dec  8 17:36:13 2024
 @author: tatha_k
 """
 
+'''
+
+This script plots the optimal path and control found through
+Optimal_control_l1_theta_anneal.py
+
+The plot is saved the Plots folder with the title OC_plot.
+
+'''
+
 import os,sys
 import time
 import matplotlib.pyplot as plt
@@ -55,7 +64,7 @@ script_dir = os.path.dirname(__file__)
 #torch.autograd.set_detect_anomaly(True)
 
 
-Dirname = script_dir+"/Data/Cat_to_cat2"
+Dirname = script_dir+"/Data/testing2"
 Ops, rho_ir, rho_ii,  rho_fr, rho_fi, params = RdParams(Dirname)
 Q1i, Q2i, Q3i, Q4i, Q5i = vars_calc(Ops, rho_ir, rho_ii)
 Q1f, Q2f, Q3f, Q4f, Q5f = vars_calc(Ops, rho_fr, rho_fi)
@@ -150,4 +159,4 @@ axs[3,1].set_xlabel(r'$t$',fontsize=15)
 axs[3,1].set_xlim(0,3)
 
 plt.subplots_adjust(wspace=0.22, hspace=0.08)
-#plt.savefig(Dirname+'/Plots/OC_plot.pdf',bbox_inches='tight')
+plt.savefig(Dirname+'/Plots/OC_plot.pdf',bbox_inches='tight')

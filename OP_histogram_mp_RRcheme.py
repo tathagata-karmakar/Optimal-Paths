@@ -6,6 +6,17 @@ Created on Thu Mar 27 11:05:29 2025
 @author: tatha_k
 """
 
+
+''' 
+This script generates histograms
+for a sample control and the optimal control for a 
+problem defined by Initialization.py. The Kraus opererators
+are defined according to Rouchon et al., PRA 91, 012118 (2015).
+For the script to work, Optimal_control_l1_theta_anneal.py and Control_Generation.py
+need to be run first. Histograms are saved as a Histogram_RRScheme.hdf5
+file. 
+
+'''
 import os,sys
 os.environ['JAX_PLATFORMS'] = 'cpu'
 #os.environ['JAX_DISABLE_JIT'] = '1'

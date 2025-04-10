@@ -6,6 +6,15 @@ Created on Tue May 14 13:23:37 2024
 @author: t_karmakar
 """
 
+'''
+
+This script finds a sample quadrature and parametric potential for a 
+problem defined through Initialization.py
+
+The results are saved as hdf5 file titled Alternate_control
+
+'''
+
 import os,sys
 import time
 import matplotlib.pyplot as plt
@@ -90,7 +99,7 @@ tempi = 1.0
 temp = tempi
 lrate = 1e-2
 
-#for n in range(nsteps):
+#Simulated annealing
 nsteps = 5000
 n=0
 nbest = 0

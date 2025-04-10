@@ -6,6 +6,15 @@ Created on Tue Dec 17 16:19:07 2024
 @author: tatha_k
 """
 
+'''
+
+This script plots the sample control found through
+Control_Generation.py
+
+The plot is saved the Plots folder with the title sample_control.
+
+'''
+
 import os,sys
 import time
 import matplotlib.pyplot as plt
@@ -53,7 +62,7 @@ import optax
 #import torchvision.models as models
 ##torch.backends.cuda.cufft_plan_cache[0].max_size = 32
 #torch.autograd.set_detect_anomaly(True)
-Dirname = script_dir+"/Data/Cat_to_cat2"
+Dirname = script_dir+"/Data/testing2"
 Ops, rho_ir, rho_ii,  rho_fr, rho_fi, params = RdParams(Dirname)
 ts = params[1]
 

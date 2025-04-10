@@ -634,9 +634,10 @@ def OP_wcontrol_Euler(Initials, Ops, rho_ir, rho_ii, l1_t, theta_t, params):
   return Q1, Q2, Q3, Q4, Q5, rhor, rhoi, readout
 
 
-
-
-
+'''
+Matrix to be multiplied with initial values to find the 
+first order Gamma and kappa terms
+'''
 def Multiply_Mat(nvars, Ncos):
     tmp1 = np.zeros((nvars,nvars+4*Ncos))
     #tmp2 = np.zeros((4,10+2*Ncos), dtype=complex)
@@ -646,6 +647,10 @@ def Multiply_Mat(nvars, Ncos):
         tmp1[i] = np.concatenate((idmat[i],zerovec))
     return tmp1
 
+
+'''
+Prepare sample control as Fourier series
+'''
 def Fourier_fns(nvars, Ncos, t_i, t_f, t):
     tmp = np.zeros(2*Ncos)
     for i in range(2*Ncos):
@@ -662,6 +667,11 @@ def Fourier_fns(nvars, Ncos, t_i, t_f, t):
     
     return theta_mat, l1_mat
 
+
+'''
+Matrices to be multiplied with initial values to find
+theta and lambda_1 as functions of time
+'''
 def Fourier_mat(nvars, Ncos, t_i, t_f, ts):
     theta_mat = np.zeros((len(ts),nvars+4*Ncos))
     l1_mat = np.zeros((len(ts),nvars+4*Ncos))
@@ -671,6 +681,9 @@ def Fourier_mat(nvars, Ncos, t_i, t_f, ts):
         l1_mat[i,:] = tmp2
     return theta_mat, l1_mat
 
+'''
+Single step update with a sample control
+'''
 def rho_update_control_generate(i, Input_Initials): #Optimal control integration with \lambda_1=0
     Initials, Ops, rhor, rhoi, G1s, Idth, theta_t, l1_t, params, j, Ncos = Input_Initials
   #I_t = I_tR + 1j*I_tI
@@ -696,7 +709,12 @@ def rho_update_control_generate(i, Input_Initials): #Optimal control integration
   #Idth1 = -(-(GLL-w**2/4.0)/(2*tau)-(kappaLL+2*r*w)/2.0-(kappaMM+2*v*z)/2.0)
     return (Initials, Ops, rhor1, rhoi1, G1s1, Idth1, theta_t, l1_t, params, j+1, Ncos)
 
-
+'''
+JAX implementation of a most-likely path
+for a given sample control. Outputs the real and imaginary
+parts of the final density matrix. Also returns the 
+probability density of the readouts.
+'''
 def MLP_control_generate(Initials, Ops, rho_ir, rho_ii, theta_t, l1_t, params, Ncos, MMat):
   Idth =  0.0
   #G10 = jnp.matmul(MMat[0],Initials)#+jnp.array([0])
@@ -712,6 +730,11 @@ def MLP_control_generate(Initials, Ops, rho_ir, rho_ii, theta_t, l1_t, params, N
   #rho_update(Initials, X, P, H, X2, P2, XP, PX, rho, I_tR, I_tI, i, theta_t, ts, tau, dt)
   return rhor, rhoi, Idth
 
+'''
+Cost under sample conrol
+Returns fidelity wrt the target state, Probability density of readouts,
+real and imaginary parts of the final state
+'''
 @jit
 def CostF_control_generate(Initials, Ops, rho_ir, rho_ii, rho_fr, rho_fi, theta_mat, l1_mat, params, Ncos, MMat):
     theta_t = theta_mat @ Initials
@@ -722,7 +745,10 @@ def CostF_control_generate(Initials, Ops, rho_ir, rho_ii, rho_fr, rho_fi, theta_
     #print (Idth)
     return Tr_Distance(rho_f_simulr, rho_f_simuli, rho_fr, rho_fi), Idth, rho_f_simulr, rho_f_simuli
 
-
+'''
+Single step update of a stochastic trajectory
+under a given control
+'''
 def OP_trajectory_JAX(i, Input_Initials):
     dWt, Ops, rhor, rhoi, l1_t, theta_t, r_t, Idth, params, j = Input_Initials
     l1 = l1_t[j]
@@ -758,6 +784,11 @@ def OP_trajectory_JAX(i, Input_Initials):
     return (dWt, Ops, rhor, rhoi, l1_t, theta_t, r_t, Idth1, params, j+1)
 
 
+'''
+Integrates a stochastic trajectory under a sample control. Outputs
+fidelity wrt target state, distance between trajectory and the optimal path
+under the given control.
+'''
 @jit    
 def OP_stochastic_trajectory_JAX(dWt, Ops, rho_ir, rho_ii, rho_fr, rho_fi,  l1_t, theta_t, r_t, params):
   #rho = rho_i
@@ -770,6 +801,13 @@ def OP_stochastic_trajectory_JAX(dWt, Ops, rho_ir, rho_ii, rho_fr, rho_fi,  l1_t
   dWt, Ops, rhor, rhoi, l1_t, theta_t, r_t, Idth, params, k1 = jax.lax.fori_loop(0, len(params[1])-1, OP_trajectory_JAX,(dWt, Ops, rhor, rhoi, l1_t, theta_t, r_t, Idth, params, k1))
   return Fidelity_PS(rhor, rhoi, rho_fr, rho_fi), jnp.sqrt(Idth/params[1][-1])
 
+
+'''
+Simulates a stochastic trajectory for a given control.
+Outputs position and momentum expectation values, covariance
+matrix elements, real and imaginary parts of the final density 
+matrix, and the stochastic readout.
+'''
 def OP_stochastic_trajectory(Ops, rho_ir, rho_ii, l1_t, theta_t, params):
   rhor = rho_ir
   rhoi = rho_ii
@@ -815,6 +853,10 @@ def OP_stochastic_trajectory(Ops, rho_ir, rho_ii, l1_t, theta_t, params):
   #Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5 = jax.lax.fori_loop(0, len(ts), rho_integrate_JAX,(Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5))
   return Q1,Q2,Q3,Q4,Q5, rhor, rhoi, readout
 
+
+'''
+Reads an existing file generated through Initialization.py
+'''
 def RdParams(Dirname):
     with h5py.File(Dirname+'/Parameters.hdf5', 'r') as f:
         Ops =  jnp.array(f['Ops'])
@@ -831,7 +873,9 @@ def RdParams(Dirname):
         l1max = np.array(f['l1max']).item()
     return Ops, rho_ir, rho_ii,  rho_fr, rho_fi, (l1max, ts, ts[1]-ts[0], tau, Idmat)
 
-
+'''
+Kraus operator from Rouchon et al., PRA 91, 012118 (2015).
+'''
 def M_stochastic_step_RR(Ops, r, expL, csth, snth,  l1, params): #Optimal control integration with \lambda_1=0
   #csth, snth = jnp.cos(theta), jnp.sin(theta)
   #r = jnp.array([csth, snth, 0, 0]) @ G1s
@@ -844,6 +888,9 @@ def M_stochastic_step_RR(Ops, r, expL, csth, snth,  l1, params): #Optimal contro
   return Fac2r, Fac2i#, G101, G011, k101, k011, G201, G111, G021, k201, k111, k021
 
 
+'''
+Stochastic step update from Rouchon et al., PRA 91, 012118 (2015).
+'''
 def OP_trajectory_JAX_RR(i, Input_Initials):
     dWt, Ops, rhor, rhoi, l1_t, theta_t, r_t, Idth, params, j = Input_Initials
     l1 = l1_t[j]
@@ -879,6 +926,10 @@ def OP_trajectory_JAX_RR(i, Input_Initials):
     return (dWt, Ops, rhor, rhoi, l1_t, theta_t, r_t, Idth1, params, j+1)
 
 
+
+'''
+Stochastic trajectory from Rouchon et al., PRA 91, 012118 (2015).
+'''
 @jit    
 def OP_stochastic_trajectory_JAX_RR(dWt, Ops, rho_ir, rho_ii, rho_fr, rho_fi,  l1_t, theta_t, r_t, params):
   #rho = rho_i
