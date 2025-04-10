@@ -69,7 +69,7 @@ def OP_ST_JAX(dWs, Ops, rho_ir, rho_ii, rho_fr, rho_fi, l10i, theta0i, rOP, newp
         return local_f(dWs, Ops, rho_ir, rho_ii, rho_fr, rho_fi, l10i, theta0i, rOP, newparams)
 
 if __name__=="__main__":
-    Dirname = script_dir+"/Data/Cat_to_ground"
+    Dirname = script_dir+"/Data/testing2"
     Ops, rho_ir, rho_ii,  rho_fr, rho_fi, params = RdParams(Dirname)
     '''
     with h5py.File(Dirname+'/Parameters.hdf5', 'r') as f:
@@ -124,7 +124,7 @@ if __name__=="__main__":
     
     resultsC = jnp.zeros((ns, batchsize, 2))
     resultsOC = jnp.zeros((ns, batchsize,2 )) 
-    rng = np.random.default_rng(seed=42)
+    rng = np.random.default_rng(seed=30)
     stime = time.time()
     for n in range(ns):
         btime  = time.time()

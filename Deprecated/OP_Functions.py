@@ -37,8 +37,8 @@ from jax._src.nn.functions import relu,gelu
 from functools import partial
 import collections
 from typing import Iterable
-from jaxopt import OptaxSolver
-import optax
+#from jaxopt import OptaxSolver
+#import optax
 
 #import torch
 #from torch import nn
@@ -267,7 +267,7 @@ def PlotOP(Initials, X, P, H, rho_i, rho_f, ts, theta_t, tau, figname):
     q2f = expect(P,rho_f)
     
     t_i, t_f = ts[0], ts[-1]
-    fig, axs = plt.subplots(3,1,figsize=(6,14),sharex='all')
+    fig, axs = plt.subplots(5,1,figsize=(6,14),sharex='all')
     axs[0].plot(ts, q1t, linewidth =4, color = 'green', label = 'Gaussian assumption')
     axs[0].plot(ts, X_simul1, linewidth =3, linestyle = 'dashed', color = 'red', label = 'General')
     axs[0].plot(t_i, q1i, "o", color = 'b', markersize =12)
@@ -284,7 +284,7 @@ def PlotOP(Initials, X, P, H, rho_i, rho_f, ts, theta_t, tau, figname):
     axs[1].tick_params(labelsize=15)
     axs[0].legend(loc=1,fontsize=15)
     
-    '''
+    
     axs[2].axhline(q3/2.0, linewidth =4, color = 'green', label = 'PRXQ')
     axs[2].plot(ts, varX_simul1, linewidth =3, linestyle = 'dashed', color = 'red', label = 'Strato')
     axs[2].plot(t_i, expect((X-q1i)*(X-q1i), rho_i), "o", color = 'b', markersize =12)
@@ -299,7 +299,7 @@ def PlotOP(Initials, X, P, H, rho_i, rho_f, ts, theta_t, tau, figname):
     axs[4].plot(ts, varP_simul1, linewidth =3, linestyle = 'dashed', color = 'red', label = 'Starto')
     axs[4].plot(t_i, expect((P-q2i)*(P-q2i), rho_i), "o", color = 'b', markersize =12)
     axs[4].plot(t_f, expect((P-q2f)*(P-q2f), rho_f), "X", color = 'r', markersize =12)
-    '''
+    
     axs[2].plot(ts, rop_prxq, linewidth =4, color='green')
     axs[2].plot(ts, rop_strat,linewidth =3, color='red', linestyle='dashed')
     

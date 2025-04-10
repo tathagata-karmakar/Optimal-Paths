@@ -36,8 +36,8 @@ from jax._src.nn.functions import relu,gelu
 from functools import partial
 import collections
 from typing import Iterable
-from jaxopt import OptaxSolver
-import optax
+#from jaxopt import OptaxSolver
+#import optax
 
 nlevels = 15
 
@@ -62,15 +62,15 @@ in_ali = 0.0
 fin_alr = -0.5
 fin_ali = 0.8
 
-#rho_i = squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
+rho_i = squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
 
-rho_i = (basis(nlevels, 0)-basis(nlevels,4))/np.sqrt(2)#squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
-rho_f = (basis(nlevels, 0)+basis(nlevels,4))/np.sqrt(2)
-#rho_f = squeeze(nlevels,  xiR+1j*xiI)*coherent(nlevels, fin_alr+1j*fin_ali)
+#rho_i = (basis(nlevels, 0)-basis(nlevels,4))/np.sqrt(2)#squeeze(nlevels, xiR+1j*xiI)*coherent(nlevels, in_alr+1j*in_ali)
+#rho_f = (basis(nlevels, 0)+basis(nlevels,4))/np.sqrt(2)
+rho_f = squeeze(nlevels,  xiR+1j*xiI)*coherent(nlevels, fin_alr+1j*fin_ali)
 #rho_f_int = squeeze(nlevels,  xiR*np.cos(2*t_f)-xiI*np.sin(2*t_f)+1j*(xiI*np.cos(2*t_f)+xiR*np.sin(2*t_f)))*coherent(nlevels, fin_alr*np.cos(t_f)-fin_ali*np.sin(t_f)+1j*(fin_ali*np.cos(t_f)+fin_alr*np.sin(t_f)))
 
 
-nsteps = 1000
+nsteps = 2
 X = (a+a.dag())/np.sqrt(2)
 P = (a-a.dag())/(np.sqrt(2)*1j)
 H = (X*X+P*P)/2.0

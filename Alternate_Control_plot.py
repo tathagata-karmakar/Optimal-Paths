@@ -73,8 +73,9 @@ axs[0].plot(ts, theta0, linewidth =3, color='orange')
 axs[0].set_ylabel(r'$\theta(t)$',fontsize=15)
 axs[1].set_ylabel(r'$\lambda_1(t)$',fontsize=15)
 axs[1].set_xlabel(r'$t$',fontsize=15)
+axs[1].set_xlim(0,3)
 plt.subplots_adjust(wspace=0.22, hspace=0.08)
 
-#plt.savefig(Dirname+'/Plots/sample_control.pdf',bbox_inches='tight')
+plt.savefig(Dirname+'/Plots/sample_control.pdf',bbox_inches='tight')
 
 

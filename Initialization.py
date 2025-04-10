@@ -6,6 +6,17 @@ Created on Fri Feb 21 20:19:18 2025
 @author: tatha_k
 """
 
+'''
+This script initializes a monitored harmonic oscillator problem
+
+The parameters consist of an initial state, a target final state,
+
+final time, collapse timescale, maximum value of parametric potential,
+
+number of fock states used for simulation, harmonic oscillator operators 
+
+'''
+
 import os,sys
 os.environ['JAX_PLATFORMS'] = 'cpu'
 #os.environ['JAX_DISABLE_JIT'] = '1'
@@ -69,17 +80,23 @@ from pathlib import Path
 ##torch.backends.cuda.cufft_plan_cache[0].max_size = 32
 #torch.autograd.set_detect_anomaly(True)
 
-
+'''
+Create a directory for the simulation under data directory
+'''
 Dirname = script_dir+"/Data/testing2"
 Path(Dirname).mkdir(parents=True, exist_ok=True)
 Path(Dirname+'/Plots').mkdir(parents=True, exist_ok=True)
 
-nlevels = 35
+
+'''
+Initialization
+'''
+nlevels = 35 #Number of fock states 
 
 #rho_f = coherent(nlevels, 0.5)
 a = destroy(nlevels)
 t_i = 0
-t_f = 3.0
+t_f = 3.0 #Final time
 ts = np.linspace(t_i, t_f, int(t_f/0.0005))
 dt = ts[1]-ts[0]
 tau = 15.0
@@ -139,7 +156,7 @@ Q4i = (expect(P*X+X*P,rho_i)/2.0-Q2i*Q1i)
 np_Idmat=np.identity(10)
 Idmat = jnp.array(np_Idmat)
 
-l1max = 0.2
+l1max = 0.2 #Paramtric potential bound
 tb = 0
 jnpId = jnp.identity(nlevels)
 jnpXr = jnp.array(X.full().real)
@@ -161,13 +178,16 @@ jnpP2r= jnp.matmul(jnpPr, jnpPr)-jnp.matmul(jnpPi, jnpPi)
 jnpP2i= jnp.matmul(jnpPr, jnpPi)+jnp.matmul(jnpPi, jnpPr)
 P2 = P*P
 
+'''
+Save real and imaginary parts of the operators
+'''
 Ops = (jnpXr, jnpXi, jnpPr, jnpPi,  jnpHr, jnpHi, jnpX2r, jnpX2i, jnpCXPr, jnpCXPi,  jnpP2r, jnpP2i, jnpId)
 rho_ir = jnp_rho_ir
 rho_ii = jnp_rho_ii
 rho_fr = jnp_rho_fr
 rho_fi = jnp_rho_fi
 
-params = (l1max, ts, dt, tau, Idmat)
+params = (l1max, ts, dt, tau, Idmat)  #Simulation parameters
 
 Q1i1, Q2i1, Q3i1, Q4i1, Q5i1 = vars_calc(Ops, rho_ir, rho_ii)
 

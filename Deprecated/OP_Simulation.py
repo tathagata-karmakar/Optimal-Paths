@@ -38,10 +38,10 @@ from jax._src.nn.functions import relu,gelu
 from functools import partial
 import collections
 from typing import Iterable
-from jaxopt import OptaxSolver
-import optax
+#from jaxopt import OptaxSolver
+#import optax
 
-
+'''
 import torch
 from torch import nn
 from torch.utils.data import DataLoader,Dataset
@@ -51,7 +51,7 @@ from torchvision.transforms import ToTensor, Lambda
 import torchvision.models as models
 #torch.backends.cuda.cufft_plan_cache[0].max_size = 32
 torch.autograd.set_detect_anomaly(True)
-
+'''
 '''
 Example Optimal Path Simulation for a Continuously Monitored
 Quantum Harmonic Oscillator with Controlled Quadrature Measurement
@@ -69,7 +69,7 @@ ts = np.linspace(t_i, t_f, 300)
 theta_t = np.zeros(len(ts))
 dt = ts[1]-ts[0]
 tau = 50
-nsteps = 100
+nsteps = 1
 X = (a+a.dag())/np.sqrt(2)
 P = (a-a.dag())/(np.sqrt(2)*1j)
 H = (X*X+P*P)/2.0
@@ -82,7 +82,7 @@ rho_f = rho_f*rho_f.dag()
 #pvec = np.linspace(-5,5,200)
 #W_i = wigner(rho_i,xvec,pvec)
 
-q3, q4, q5, alr, ali, A, B, q1t, q2t = OP_PRXQ_Params(X, P, rho_i, rho_f, ts, tau)
+q3, q4, q5, alr, ali, A, B, q1t, q2t, rs = OP_PRXQ_Params(X, P, rho_i, rho_f, ts, tau)
 
 rho_f_simul, X_simul, P_simul, varX_simul, covXP_simul, varP_simul = OPsoln_SHO(X, P, H, rho_i, alr, ali, A, B, ts,  tau, 1)
 
@@ -125,4 +125,4 @@ axs[2].tick_params(labelsize=15)
 axs[3].tick_params(labelsize=15)
 axs[4].tick_params(labelsize=15)
 plt.subplots_adjust(wspace=0.1, hspace=0.1)
-plt.savefig('/Users/t_karmakar/Library/CloudStorage/Box-Box/Research/Optimal_Path/Plots/tmpfig.pdf',bbox_inches='tight')
+#plt.savefig('/Users/t_karmakar/Library/CloudStorage/Box-Box/Research/Optimal_Path/Plots/tmpfig.pdf',bbox_inches='tight')

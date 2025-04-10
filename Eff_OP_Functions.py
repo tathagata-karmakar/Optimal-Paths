@@ -6,6 +6,12 @@ Created on Wed Feb 12 13:14:39 2025
 @author: tatha_k
 """
 
+'''
+
+This script defines all relevant functions for the simulations.
+
+'''
+
 import os,sys
 os.environ['JAX_PLATFORMS'] = 'cpu'
 #os.environ['JAX_DISABLE_JIT'] = '1'
@@ -83,7 +89,8 @@ def CompMult(Ar, Ai, Br, Bi):
 def ExpVal(Xr, Xi, rhor, rhoi): #Expectation value of a hermitian operator wrt state rho
     return jnp.trace(CompMultR(Xr, Xi, rhor, rhoi))
 
-def Moment_calc(Ops, rhor, rhoi):
+#Calculate moments of position and momentum up to order 2
+def Moment_calc(Ops, rhor, rhoi): 
     expX = ExpVal(Ops[0], Ops[1], rhor, rhoi)#.item()
     expP = ExpVal(Ops[2], Ops[3], rhor, rhoi)#.item()
     expX2 = ExpVal(Ops[6], Ops[7], rhor, rhoi)#.item()
@@ -91,7 +98,8 @@ def Moment_calc(Ops, rhor, rhoi):
     expCXP = ExpVal(Ops[8], Ops[9], rhor, rhoi)#.item()
     return expX, expP, expX2, expCXP, expP2
 
-def vars_calc(Ops, rhor, rhoi):
+#Calculates positon and momentum expectation values and covariance matrix elements
+def vars_calc(Ops, rhor, rhoi): 
     Q1, Q2, Q3, Q4, Q5 = Moment_calc(Ops, rhor, rhoi)
     return Q1, Q2, Q3-Q1**2, Q4/2.0-Q1*Q2, Q5-Q2**2
 
@@ -218,9 +226,19 @@ def M_stochastic_step(Ops, r, csth, snth,  l1, params): #Optimal control integra
   Fac2i = -params[2]*(Ops[7]*csth**2+csth*snth*Ops[9]+Ops[11]*snth**2)/(8*params[3])+params[2]*r*(csth*Ops[1]+snth*Ops[3])/(2*params[3])-params[2]*H1r
   return Fac2r, Fac2i#, G101, G011, k101, k011, G201, G111, G021, k201, k111, k021
 
+
+'''
+Total update of an RK4 integrator
+'''
 def RK4_delyn(k1, k2, k3, k4):
     return k1/6.0+k2/3.0+k3/3.0+k4/6.0
 
+'''
+Single step update of the total Kraus operator
+and the Gamma and kappa terms
+Kraus operator includes update due to measurement and 
+also unitary evolution, under optimal control
+'''
 def integrator_step(G1s, G2s, Ops, params):
     #expX, expP, expX2, expCXP, expP2 = Moment_calc(Ops, rhor, rhoi)
     theta, l1 = Optimal_theta_l1(G1s, G2s, params)
@@ -232,6 +250,11 @@ def integrator_step(G1s, G2s, Ops, params):
     return Fr, Fi, dG1s, dG2s
     
 
+'''
+Updated density matrix, Gamma, kappa  and probability density
+cost function, under optimal control
+
+'''
 @jit
 def RK4_step(Ops, rhor, rhoi, G1s, G2s, q0, params): 
   #= Input_Initials
@@ -298,6 +321,9 @@ def OC_plot_step(G1s, Ops, csth, snth, l1, params):
     dG1s = G_k_updates_first_order(G1s, cs, s2, c2, l1u, params)
     return Fr, Fi, dG1s
 
+'''
+RK4 update with specified control
+'''
 @jit
 def RK4_wcontrol(Ops, rhor, rhoi, G1s, csth, snth, l1, csthi, snthi, l1i, csth1, snth1, l11, params):
     Fk1r, Fk1i, G1k1 = OC_plot_step(G1s, Ops, csth, snth, l1, params)
@@ -314,6 +340,9 @@ def RK4_wcontrol(Ops, rhor, rhoi, G1s, csth, snth, l1, csthi, snthi, l1i, csth1,
     return  rho1r, rho1i, G1s1
 
 
+'''
+Euler update with specified control
+'''
 @jit
 def Euler_wcontrol(Ops, rhor, rhoi, G1s, csth, snth, l1, params):
     Fk1r, Fk1i, G1k1 = OC_plot_step(G1s,csth, snth, l1, params)
@@ -329,6 +358,10 @@ def Euler_wcontrol(Ops, rhor, rhoi, G1s, csth, snth, l1, params):
     #Idth1 = Idth
     return  rho1r, rho1i, G1s1
 
+
+'''
+JAX stepping for RK4_step 
+'''
 def RK4_stepJAX(i, Input_Initials): #Optimal control integration with \lambda_1=0
   Ops, rhor, rhoi, G1s, G2s, params, j, Idth = Input_Initials
   #Idth1 = Idth
@@ -337,6 +370,10 @@ def RK4_stepJAX(i, Input_Initials): #Optimal control integration with \lambda_1=
   return (Ops, rho1r, rho1i, G1s1, G2s1, params, j+1, Idth1)
 
 
+'''
+Given initial Gamma, kappa, rho,
+compute the final state and probability cost under optimal control
+'''
 def OPsoln_control_l10_JAX(Initials, Ops, rho_ir, rho_ii,  params):
   #I_tR = jnp.array([0.0])
   #G10 = jnp.matmul(params[4][0], Initials)
@@ -364,12 +401,24 @@ def OPsoln_control_l10_JAX(Initials, Ops, rho_ir, rho_ii,  params):
   #rho_update(Initials, X, P, H, X2, P2, XP, PX, rho, I_tR, I_tI, i, theta_t, ts, tau, dt)
   return rhor, rhoi, Idth
 
+'''
+Cost under optimal conrol
+Returns fidelity wrt the target state, Probability density of readouts,
+real and imaginary parts of the final state
+'''
 @jit
 def CostF_control_l101(Initials, Ops, rho_ir, rho_ii, rho_fr, rho_fi,  params):
   rho_f_simulr, rho_f_simuli, Idth = OPsoln_control_l10_JAX(Initials, Ops, rho_ir, rho_ii, params)
   return Tr_Distance(rho_f_simulr, rho_f_simuli, rho_fr, rho_fi), Idth, rho_f_simulr, rho_f_simuli
 
-
+'''
+Find the optimal path under optimal control, without JAX
+Input is initial Gamma, kappa, density matrix
+Output is expectation values of position and momentum,
+covariance matrix elements as functions of time. Also returns optimal theta, lambda_1,
+real and imaginary parts of final density matrix, optimal readouts, readout probability density
+as functions of time.
+'''
 def OPintegrate_strat(Initials, Ops, rho_ir, rho_ii, params):
   #I_tR = jnp.array([0.0])
   '''
@@ -442,6 +491,14 @@ def OPintegrate_strat(Initials, Ops, rho_ir, rho_ii, params):
   return Q1, Q2, Q3, Q4, Q5, theta_t, l1_t, rhor, rhoi, readout, Idth
 
 
+'''
+Find the optimal path under a specified control, without JAX
+Input is initial Gamma, kappa, density matrix
+Output is expectation values of position and momentum,
+covariance matrix elements as functions of time. Also returns optimal theta, lambda_1,
+real and imaginary parts of final density matrix, optimal readouts, readout probability density
+as functions of time.
+'''
 def OP_wcontrol(Initials, Ops, rho_ir, rho_ii,  l1_t, theta_t, params):
   #I_tR = jnp.array([0.0])
   G1s = params[4][0:4] @ Initials
@@ -505,6 +562,15 @@ def OP_wcontrol(Initials, Ops, rho_ir, rho_ii,  l1_t, theta_t, params):
   #Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5 = jax.lax.fori_loop(0, len(ts), rho_integrate_JAX,(Initials, X, P, H,  rho, I_t, I_k_t, I_Gp_t, I_G_t,  phi, ts, tau, dt, k1, Id, Q1, Q2, Q3, Q4, Q5))
   return Q1, Q2, Q3, Q4, Q5, rhor, rhoi, readout, Idth
 
+
+'''
+Find the optimal path under a specified control, without JAX and Euler stepping.
+Input is initial Gamma, kappa, density matrix
+Output is expectation values of position and momentum,
+covariance matrix elements as functions of time. Also returns optimal theta, lambda_1,
+real and imaginary parts of final density matrix, optimal readouts, readout probability density
+as functions of time.
+'''
 def OP_wcontrol_Euler(Initials, Ops, rho_ir, rho_ii, l1_t, theta_t, params):
   #I_tR = jnp.array([0.0])
   G1s = params[4][0:4] @ Initials
