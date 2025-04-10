@@ -1,5 +1,5 @@
 # Optimal-Paths
-Codes for Quantum Optimal Control of a monitored harmonic oscillator. For any issues please feel free to email me at tatha.karma@gmail.com
+Codes for Quantum Optimal Control of a monitored harmonic oscillator. For any issues please feel free to email me at tatha.karma@gmail.com.
 
 
 Eff_Op_Functions.py define all the necessary functions
