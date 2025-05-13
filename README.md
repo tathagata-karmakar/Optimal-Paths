@@ -1,8 +1,8 @@
 # Optimal-Paths
 Codes for Quantum Optimal Control of a monitored harmonic oscillator. For any issues please feel free to email me at tatha.karma@gmail.com.
 
+The corresponding article can be found at: https://arxiv.org/abs/2504.08173
 
-Eff_Op_Functions.py define all the necessary functions
 
 Initialization.py initializes a problem and creates a directory within Data folder for the specific problem (if such directory did not exist before). Saves the number of levels, initial and final states, time array, measurement collapse timescale, maximum strength of the parametric potential, relevant simple harmonic oscillator operators.
 
